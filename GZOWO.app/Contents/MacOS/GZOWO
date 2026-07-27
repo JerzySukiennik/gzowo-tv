@@ -1,0 +1,31 @@
+#!/bin/bash
+# Brings the whole system up: forces the TV into its native mode, starts the
+# server, opens Brave in kiosk on the television. Quitting kills everything.
+
+set -u
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+cd "$HERE" || exit 1
+
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+
+if ! command -v node >/dev/null 2>&1; then
+  osascript -e 'display alert "GZOWO" message "Node.js not found. Install it and try again."'
+  exit 1
+fi
+
+LOG="$HERE/data/gzowo.log"
+mkdir -p "$HERE/data"
+
+pkill -f "gzowo-tv/server/index.js" 2>/dev/null
+
+node server/index.js --launch >>"$LOG" 2>&1 &
+SERVER_PID=$!
+
+cleanup() {
+  kill "$SERVER_PID" 2>/dev/null
+  pkill -f "user-data-dir=$HERE/data/brave-profile" 2>/dev/null
+}
+trap cleanup EXIT INT TERM
+
+wait "$SERVER_PID"

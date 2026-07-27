@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GZOWO">
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icon.png">
+<link rel="stylesheet" href="./remote.css">
+<title>GZOWO Remote</title>
+</head>
+<body>
+
+<header id="bar">
+  <span id="dot" class="dot"></span>
+  <span id="status">Łączę…</span>
+</header>
+
+<div id="pad" aria-label="Trackpad">
+  <div id="ripple"></div>
+  <p id="hint">Przesuwaj i stukaj</p>
+</div>
+
+<nav id="controls">
+  <button class="key" data-key="escape" aria-label="Wstecz">
+    <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <button class="key" data-action="home" aria-label="Ekran główny">
+    <svg viewBox="0 0 24 24"><path d="M4 11l8-6 8 6v8a1 1 0 01-1 1h-4v-6h-6v6H5a1 1 0 01-1-1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+  </button>
+  <button class="key" data-action="keyboard" aria-label="Klawiatura">
+    <svg viewBox="0 0 24 24"><rect x="2.5" y="6.5" width="19" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <button class="key" data-key="space" aria-label="Odtwórz lub wstrzymaj">
+    <svg viewBox="0 0 24 24"><path d="M9 6v12M15 6v12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <button class="key" data-key="subtitles" aria-label="Napisy">
+    <svg viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 12h4M14 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+</nav>
+
+<form id="typer" hidden>
+  <input id="field" type="search" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Szukaj…">
+  <button type="button" id="done">Gotowe</button>
+</form>
+
+<script src="./remote.js" defer></script>
+</body>
+</html>

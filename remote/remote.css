@@ -1,0 +1,151 @@
+/* GZOWO remote. You look at the television, not at this — so the trackpad is
+   enormous, the buttons are unmistakable by shape, and nothing else competes. */
+
+:root {
+  --ink: #f5f5f7;
+  --dim: rgba(245, 245, 247, 0.45);
+  --surface: rgba(255, 255, 255, 0.07);
+  --edge: rgba(255, 255, 255, 0.12);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+[hidden] { display: none !important; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+body {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 0.9rem;
+  padding: max(0.9rem, env(safe-area-inset-top)) 0.9rem max(1.1rem, env(safe-area-inset-bottom));
+}
+
+#bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--dim);
+  padding: 0 0.35rem;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #d9534f;
+  transition: background 300ms ease;
+}
+
+.dot[data-live="on"] { background: #4cd964; }
+
+#pad {
+  position: relative;
+  border-radius: 1.6rem;
+  background: var(--surface);
+  border: 1px solid var(--edge);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  transition: background 180ms ease, transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#pad.pressed { background: rgba(255, 255, 255, 0.12); transform: scale(0.994); }
+
+#hint {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: rgba(245, 245, 247, 0.22);
+  letter-spacing: 0.02em;
+  transition: opacity 260ms ease;
+}
+
+#pad.active #hint { opacity: 0; }
+
+#ripple {
+  position: absolute;
+  width: 12rem;
+  height: 12rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.16), transparent 68%);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.4);
+  will-change: transform, opacity;
+}
+
+#controls {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.6rem;
+}
+
+.key {
+  appearance: none;
+  border: 1px solid var(--edge);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 1.1rem;
+  height: 3.6rem;
+  display: grid;
+  place-items: center;
+  transition: transform 140ms cubic-bezier(0.22, 1, 0.36, 1), background 140ms ease;
+}
+
+.key:active { transform: scale(0.93); background: rgba(255, 255, 255, 0.16); }
+.key svg { width: 1.45rem; height: 1.45rem; }
+
+#typer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.8rem 0.9rem max(0.9rem, env(safe-area-inset-bottom));
+  background: rgba(18, 18, 20, 0.86);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border-top: 1px solid var(--edge);
+}
+
+#field {
+  flex: 1;
+  appearance: none;
+  border: 1px solid var(--edge);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--ink);
+  border-radius: 0.9rem;
+  padding: 0.75rem 0.95rem;
+  font-size: 1.05rem;
+  font-family: inherit;
+}
+
+#field:focus { outline: none; border-color: rgba(255, 255, 255, 0.34); }
+
+#done {
+  appearance: none;
+  border: none;
+  background: rgba(255, 255, 255, 0.92);
+  color: #000;
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  border-radius: 0.9rem;
+  padding: 0 1.1rem;
+}

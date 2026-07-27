@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GZOWO</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body data-screen="boot">
+
+<div id="ambient"></div>
+<div id="vignette"></div>
+
+<section id="boot">
+  <div class="wordmark" aria-label="GZOWO">
+    <span class="glyph" style="--i:0"><i class="beam"></i><b>G</b></span>
+    <span class="glyph" style="--i:1"><i class="beam"></i><b>Z</b></span>
+    <span class="glyph" style="--i:2"><i class="beam"></i><b>O</b></span>
+    <span class="glyph" style="--i:3"><i class="beam"></i><b>W</b></span>
+    <span class="glyph" style="--i:4"><i class="beam"></i><b>O</b></span>
+  </div>
+</section>
+
+<main id="home" hidden>
+  <header id="hero">
+    <div class="hero-art">
+      <img id="hero-backdrop" alt="">
+      <div id="hero-trailer"></div>
+    </div>
+    <div class="hero-copy">
+      <p class="eyebrow" id="hero-eyebrow"></p>
+      <h1 id="hero-title"></h1>
+      <p class="meta" id="hero-meta"></p>
+      <p class="overview" id="hero-overview"></p>
+      <div class="actions" id="hero-actions"></div>
+    </div>
+  </header>
+  <div id="rows"></div>
+</main>
+
+<section id="detail" hidden>
+  <div class="detail-art">
+    <img id="detail-backdrop" alt="">
+    <div id="detail-trailer"></div>
+  </div>
+  <div class="detail-body">
+    <p class="eyebrow" id="detail-eyebrow"></p>
+    <h1 id="detail-title"></h1>
+    <p class="meta" id="detail-meta"></p>
+    <p class="overview" id="detail-overview"></p>
+    <div class="actions" id="detail-actions"></div>
+    <div class="cast" id="detail-cast"></div>
+  </div>
+</section>
+
+<section id="search" hidden>
+  <div class="search-head">
+    <p class="eyebrow">Search</p>
+    <h1 id="search-query">Type on your phone</h1>
+    <p class="meta" id="search-note">The keyboard opens on the remote.</p>
+  </div>
+  <div class="grid" id="search-results"></div>
+</section>
+
+<section id="pairing" hidden>
+  <p class="eyebrow">Remote</p>
+  <h1>Open this on your phone</h1>
+  <p class="pair-url" id="pair-url"></p>
+  <p class="meta">Same Wi-Fi. Add it to the home screen once and it behaves like an app.</p>
+</section>
+
+<div id="toast" hidden></div>
+<div id="offline" hidden>No connection — showing the catalogue from memory</div>
+
+<script type="module" src="./js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "name": "gzowo-tv",
+  "version": "0.1.0",
+  "private": true,
+  "description": "GZOWO — an Apple TV-like catalogue and launcher for the family TV in Gzowo.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "tv": "node server/index.js --launch",
+    "display": "node server/display.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
