@@ -1,13 +1,14 @@
-// Boot sequence. A seam of light opens in the black and five shafts rise into the
-// letter positions; everything lands on one impact frame — flash, letters and
-// chord on the same instant.
+// Boot sequence in two acts. A seam of light opens in the black and five shafts
+// rise into the letter positions; everything lands on one impact frame — flash,
+// shockwave, letters and chord on the same instant. Then the mark settles and the
+// place it belongs to is named underneath it.
 
 import { bootSting } from './sound.js';
 
-const IMPACT = 1300;
+const IMPACT = 2000;
 const SPREAD = 9;
-const HOLD = 1000;
-const EXIT = 820;
+const HOLD = 1200;
+const EXIT = 900;
 
 const OUT = 'cubic-bezier(0.16, 1, 0.3, 1)';
 const IN_OUT = 'cubic-bezier(0.7, 0, 0.2, 1)';
@@ -23,35 +24,40 @@ export function play(root) {
   const stage = root.querySelector('.boot-stage');
   const glyphs = [...root.querySelectorAll('.glyph')];
   const seed = root.querySelector('.seed');
+  const shock = root.querySelector('.shock');
   const sweep = root.querySelector('.sweep');
+  const rule = root.querySelector('.rule');
+  const tagline = root.querySelector('.tagline');
+  const sub = root.querySelector('.sub');
   const flash = root.querySelector('.boot-flash');
   const grain = root.querySelector('.boot-grain');
   const mark = root.querySelector('.wordmark');
 
   bootSting(IMPACT);
 
-  if (reduced()) return quick(root, glyphs, seed);
+  if (reduced()) return quick(root, glyphs, seed, rule, tagline);
 
-  const settle = IMPACT + 620 + HOLD;
+  const settle = IMPACT + 1820;
   const total = settle + EXIT;
 
   stage.animate([
-    { transform: 'scale(1.07)' },
-    { transform: 'scale(1.005)', offset: 0.62 },
+    { transform: 'scale(1.08)' },
+    { transform: 'scale(1.006)', offset: 0.62 },
     { transform: 'scale(1)' }
   ], { duration: total, easing: 'cubic-bezier(0.28, 0, 0.2, 1)', fill: 'forwards' });
 
   grain.animate([
     { opacity: 0 },
-    { opacity: 0.05, offset: 0.14 },
-    { opacity: 0.05, offset: 0.82 },
+    { opacity: 0.05, offset: 0.1 },
+    { opacity: 0.05, offset: 0.85 },
     { opacity: 0 }
   ], { duration: total, easing: 'linear', fill: 'forwards' });
 
   seed.animate([
     { transform: 'scaleX(0)', opacity: 0 },
-    { transform: 'scaleX(0.28)', opacity: 1, offset: 0.3 },
-    { transform: 'scaleX(1)', opacity: 0.9, offset: 0.72 },
+    { transform: 'scaleX(0.14)', opacity: 0.55, offset: 0.22 },
+    { transform: 'scaleX(0.42)', opacity: 1, offset: 0.5 },
+    { transform: 'scaleX(1)', opacity: 0.92, offset: 0.86 },
     { transform: 'scaleX(1.06)', opacity: 0 }
   ], { duration: IMPACT + 40, easing: IN_OUT, fill: 'forwards' });
 
@@ -61,10 +67,10 @@ export function play(root) {
 
     shaft.animate([
       { transform: 'scaleY(0)', opacity: 0 },
-      { transform: 'scaleY(1)', opacity: 1, offset: 0.55 },
-      { transform: 'scaleY(1)', opacity: 1, offset: 0.86 },
+      { transform: 'scaleY(1)', opacity: 1, offset: 0.5 },
+      { transform: 'scaleY(1)', opacity: 1, offset: 0.88 },
       { transform: 'scaleY(0.04)', opacity: 0 }
-    ], { duration: IMPACT - 340, delay: 620 + i * 52, easing: IN_OUT, fill: 'forwards' });
+    ], { duration: 1060, delay: 900 + i * 70, easing: IN_OUT, fill: 'forwards' });
 
     letter.animate([
       { opacity: 0, transform: 'scale(1.22)', filter: 'blur(12px)' },
@@ -83,6 +89,12 @@ export function play(root) {
     { opacity: 0 }
   ], { duration: 620, delay: IMPACT - 30, easing: 'ease-out', fill: 'forwards' });
 
+  shock.animate([
+    { transform: 'scale(0.35)', opacity: 0 },
+    { transform: 'scale(0.7)', opacity: 0.5, offset: 0.1 },
+    { transform: 'scale(3.4)', opacity: 0 }
+  ], { duration: 1000, delay: IMPACT - 20, easing: 'cubic-bezier(0.12, 0.8, 0.3, 1)', fill: 'forwards' });
+
   sweep.animate([
     { transform: 'translateX(-20rem) skewX(-16deg)', opacity: 0 },
     { transform: 'translateX(-8rem) skewX(-16deg)', opacity: 1, offset: 0.32 },
@@ -90,10 +102,27 @@ export function play(root) {
     { transform: 'translateX(20rem) skewX(-16deg)', opacity: 0 }
   ], { duration: 900, delay: IMPACT + 170, easing: IN_OUT, fill: 'forwards' });
 
+  rule.animate([
+    { transform: 'scaleX(0)' },
+    { transform: 'scaleX(1)' }
+  ], { duration: 760, delay: IMPACT + 640, easing: OUT, fill: 'forwards' });
+
+  tagline.animate([
+    { opacity: 0, transform: 'translateY(5px)' },
+    { opacity: 1, transform: 'translateY(0)' }
+  ], { duration: 760, delay: IMPACT + 940, easing: OUT, fill: 'forwards' });
+
+  const leaving = { duration: EXIT, delay: settle, easing: IN_OUT, fill: 'forwards' };
+
   const exit = mark.animate([
     { opacity: 1, transform: 'scale(1)', filter: 'blur(0px)' },
     { opacity: 0, transform: 'scale(0.9)', filter: 'blur(16px)' }
-  ], { duration: EXIT, delay: settle, easing: IN_OUT, fill: 'forwards' });
+  ], leaving);
+
+  sub.animate([
+    { opacity: 1, transform: 'translateX(-50%) scale(1)' },
+    { opacity: 0, transform: 'translateX(-50%) scale(0.94)' }
+  ], { ...leaving, duration: EXIT - 220 });
 
   const fade = root.animate([
     { opacity: 1 },
@@ -104,8 +133,10 @@ export function play(root) {
   return guard(done, total + 300).then(() => { root.style.opacity = '0'; });
 }
 
-function quick(root, glyphs, seed) {
+function quick(root, glyphs, seed, rule, tagline) {
   seed.style.opacity = '0';
+  rule.style.transform = 'scaleX(1)';
+  tagline.style.opacity = '1';
   glyphs.forEach((glyph) => {
     glyph.querySelector('.shaft').style.opacity = '0';
     glyph.querySelector('b').style.cssText = 'opacity:1;transform:none';
@@ -113,9 +144,9 @@ function quick(root, glyphs, seed) {
 
   const fade = root.animate([{ opacity: 1 }, { opacity: 0 }], {
     duration: 500,
-    delay: IMPACT + 200,
+    delay: IMPACT + 400,
     fill: 'forwards'
   }).finished.catch(() => {});
 
-  return guard(fade, IMPACT + 900).then(() => { root.style.opacity = '0'; });
+  return guard(fade, IMPACT + 1100).then(() => { root.style.opacity = '0'; });
 }

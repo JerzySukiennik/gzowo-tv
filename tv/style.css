@@ -114,6 +114,48 @@ h1 {
   will-change: transform;
 }
 
+.shock {
+  position: absolute;
+  width: 9rem;
+  height: 9rem;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.sub {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 1.5rem;
+  display: grid;
+  justify-items: center;
+  gap: 0.95rem;
+  white-space: nowrap;
+}
+
+.rule {
+  width: 15rem;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  transform: scaleX(0);
+  will-change: transform;
+}
+
+.tagline {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.44em;
+  text-indent: 0.44em;
+  text-transform: uppercase;
+  color: rgba(245, 245, 247, 0.6);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
 .boot-grain {
   position: fixed;
   inset: 0;
