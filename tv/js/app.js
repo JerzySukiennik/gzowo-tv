@@ -85,6 +85,8 @@ function handle(message) {
 }
 
 function route(key) {
+  if (state.screen === 'player') return playerKey(key);
+  if (state.screen === 'profiles') return profilesKey(key);
   if (state.screen === 'detail') return detailKey(key);
   if (state.screen === 'search') return searchKey(key);
   return homeKey(key);
@@ -206,21 +208,32 @@ function activate() {
   const item = current();
   if (!item) return;
   if (item.action) return item.action();
-  if (item.data) openDetail(item.data);
+  if (!item.data) return;
+
+  const kind = item.data.kind;
+  if (kind === 'youtube' || kind === 'original') return openPlayer(item.data);
+  return openDetail(item.data);
 }
 
 /* ---------- rendering ---------- */
+
+function artFor(item) {
+  if (item.kind === 'youtube' && item.thumb) return `/thumb?u=${encodeURIComponent(item.thumb)}`;
+  if (item.kind === 'original') return item.thumb;
+  return item.poster ? `/img/w342${item.poster}` : null;
+}
 
 function card(item) {
   const el = document.createElement('div');
   el.className = 'card';
   el.dataset.focus = 'off';
 
-  if (item.poster) {
+  const src = artFor(item);
+  if (src) {
     const img = new Image();
     img.decoding = 'async';
     img.alt = item.title;
-    img.src = `/img/w342${item.poster}`;
+    img.src = src;
     img.addEventListener('load', () => img.classList.add('ready'));
     el.append(img);
   } else {
@@ -228,6 +241,35 @@ function card(item) {
     fallback.className = 'fallback';
     fallback.textContent = item.title;
     el.append(fallback);
+  }
+
+  if (item.kind === 'youtube' || item.kind === 'original') {
+    const caption = document.createElement('div');
+    caption.className = 'caption';
+    caption.textContent = item.title;
+    el.append(caption);
+  }
+
+  if (item.live) {
+    const live = document.createElement('span');
+    live.className = 'live';
+    live.textContent = 'Na żywo';
+    el.append(live);
+  } else if (item.upcoming) {
+    const soon = document.createElement('span');
+    soon.className = 'live';
+    soon.style.background = '#8a6d1f';
+    soon.textContent = 'Wkrótce';
+    el.append(soon);
+  }
+
+  if (item.position && item.duration) {
+    const bar = document.createElement('div');
+    bar.className = 'progress';
+    const fill = document.createElement('i');
+    fill.style.width = `${Math.min(100, (item.position / item.duration) * 100)}%`;
+    bar.append(fill);
+    el.append(bar);
   }
 
   if (item.provider) {
@@ -340,7 +382,7 @@ function buildHome(payload) {
     heading.textContent = row.title;
 
     const track = document.createElement('div');
-    track.className = 'track';
+    track.className = row.wide ? 'track track--wide' : 'track';
 
     const items = row.items.map((entry) => {
       const el = card(entry);
@@ -553,6 +595,234 @@ function searchKey(key) {
   return paintSearch();
 }
 
+/* ---------- profiles ---------- */
+
+function showProfiles(profile) {
+  const faces = $('faces');
+  state.faces = profile.profiles.map((person) => {
+    const el = document.createElement('div');
+    el.className = 'face';
+    el.dataset.focus = 'off';
+
+    const figure = document.createElement('figure');
+    if (person.avatar) {
+      const img = new Image();
+      img.src = person.avatar;
+      img.alt = person.name;
+      figure.append(img);
+    } else {
+      figure.textContent = person.name.slice(0, 1).toUpperCase();
+    }
+
+    const label = document.createElement('span');
+    label.textContent = person.name;
+    el.append(figure, label);
+    faces.append(el);
+    return { el, person };
+  });
+
+  faces.replaceChildren(...state.faces.map((f) => f.el));
+  state.faceIndex = Math.max(0, profile.profiles.findIndex((p) => p.id === profile.active));
+  paintFaces();
+
+  reveal($('profiles'));
+  body.dataset.screen = state.screen = 'profiles';
+}
+
+function paintFaces() {
+  state.faces?.forEach((face, i) => {
+    face.el.dataset.focus = i === state.faceIndex ? 'on' : 'off';
+  });
+}
+
+async function pickProfile() {
+  const chosen = state.faces?.[state.faceIndex];
+  if (!chosen) return;
+  thud();
+  await api('/api/profile', { method: 'POST', body: JSON.stringify({ id: chosen.person.id }) })
+    .catch(() => null);
+
+  $('profiles').classList.remove('shown');
+  setTimeout(() => { $('profiles').hidden = true; }, 420);
+
+  const payload = await api('/api/home').catch(() => null);
+  if (payload && !payload.error) {
+    $('home').hidden = false;
+    buildHome(payload);
+  }
+  body.dataset.screen = state.screen = 'home';
+  restartTrailer();
+}
+
+function profilesKey(key) {
+  const count = state.faces?.length || 0;
+  if (key === 'left') state.faceIndex = Math.max(0, state.faceIndex - 1);
+  else if (key === 'right') state.faceIndex = Math.min(count - 1, state.faceIndex + 1);
+  else if (key === 'enter') return pickProfile();
+  else return undefined;
+  tick();
+  return paintFaces();
+}
+
+/* ---------- player ---------- */
+
+const player = { kind: null, item: null, yt: null, ticker: null, chromeTimer: null };
+let ytApi = null;
+
+function loadYouTubeApi() {
+  if (ytApi) return ytApi;
+  ytApi = new Promise((resolve) => {
+    if (window.YT?.Player) return resolve(window.YT);
+    window.onYouTubeIframeAPIReady = () => resolve(window.YT);
+    const script = document.createElement('script');
+    script.src = 'https://www.youtube.com/iframe_api';
+    document.head.append(script);
+  });
+  return ytApi;
+}
+
+function clock(seconds) {
+  if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  return h
+    ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+    : `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function showChrome() {
+  const chrome = $('player-chrome');
+  chrome.classList.add('shown');
+  clearTimeout(player.chromeTimer);
+  player.chromeTimer = setTimeout(() => chrome.classList.remove('shown'), 3200);
+}
+
+async function openPlayer(item) {
+  stopTrailers();
+  thud();
+
+  player.kind = item.kind;
+  player.item = item;
+  $('player-title').textContent = item.title;
+  $('scrub-fill').style.width = '0%';
+  $('player-time').textContent = '';
+
+  reveal($('player'));
+  body.dataset.screen = state.screen = 'player';
+  showChrome();
+
+  if (item.kind === 'original') {
+    const video = $('video');
+    $('frame').replaceChildren();
+    video.hidden = false;
+    video.src = item.src;
+    video.currentTime = item.position || 0;
+    video.play().catch(() => {});
+  } else {
+    $('video').hidden = true;
+    $('video').removeAttribute('src');
+    const YT = await loadYouTubeApi();
+    $('frame').replaceChildren();
+    const host = document.createElement('div');
+    $('frame').append(host);
+    player.yt = new YT.Player(host, {
+      videoId: item.id,
+      playerVars: {
+        autoplay: 1, controls: 0, modestbranding: 1, rel: 0,
+        playsinline: 1, start: Math.floor(item.position || 0)
+      },
+      events: { onReady: (e) => e.target.playVideo() }
+    });
+  }
+
+  clearInterval(player.ticker);
+  player.ticker = setInterval(tickPlayer, 1000);
+}
+
+function playerState() {
+  if (player.kind === 'original') {
+    const video = $('video');
+    return { position: video.currentTime || 0, duration: video.duration || 0 };
+  }
+  const yt = player.yt;
+  if (!yt?.getCurrentTime) return { position: 0, duration: 0 };
+  return { position: yt.getCurrentTime() || 0, duration: yt.getDuration() || 0 };
+}
+
+function tickPlayer() {
+  const { position, duration } = playerState();
+  if (duration > 0) {
+    $('scrub-fill').style.width = `${Math.min(100, (position / duration) * 100)}%`;
+    $('player-time').textContent = `${clock(position)} / ${clock(duration)}`;
+  }
+  if (position > 5) {
+    api('/api/progress', {
+      method: 'POST',
+      body: JSON.stringify({
+        key: `${player.kind}:${player.item.id}`,
+        position,
+        duration,
+        title: player.item.title
+      })
+    }).catch(() => {});
+  }
+}
+
+function seek(delta) {
+  if (player.kind === 'original') {
+    const video = $('video');
+    video.currentTime = Math.max(0, (video.currentTime || 0) + delta);
+  } else if (player.yt?.seekTo) {
+    player.yt.seekTo(Math.max(0, (player.yt.getCurrentTime() || 0) + delta), true);
+  }
+  showChrome();
+  tickPlayer();
+}
+
+function togglePlay() {
+  if (player.kind === 'original') {
+    const video = $('video');
+    video.paused ? video.play().catch(() => {}) : video.pause();
+  } else if (player.yt?.getPlayerState) {
+    player.yt.getPlayerState() === 1 ? player.yt.pauseVideo() : player.yt.playVideo();
+  }
+  showChrome();
+}
+
+function playerKey(key) {
+  if (key === 'space' || key === 'enter') return togglePlay();
+  if (key === 'left') return seek(-10);
+  if (key === 'right') return seek(10);
+  if (key === 'down') return seek(-60);
+  if (key === 'up') return seek(60);
+  if (key === 'escape' || key === 'back') return closePlayer();
+  showChrome();
+  return undefined;
+}
+
+function closePlayer() {
+  tickPlayer();
+  clearInterval(player.ticker);
+  clearTimeout(player.chromeTimer);
+
+  const video = $('video');
+  video.pause();
+  video.removeAttribute('src');
+  video.load();
+  if (player.yt?.destroy) player.yt.destroy();
+  player.yt = null;
+  $('frame').replaceChildren();
+
+  $('player').classList.remove('shown');
+  $('player-chrome').classList.remove('shown');
+  setTimeout(() => { $('player').hidden = true; }, 380);
+
+  body.dataset.screen = state.screen = 'home';
+  paint();
+  restartTrailer();
+}
+
 /* ---------- provider hand-off ---------- */
 
 async function launch(providerKey, title) {
@@ -636,7 +906,12 @@ async function main() {
   buildHome(payload);
 
   await boot;
-  body.dataset.screen = state.screen = 'home';
+
+  if (!resuming && payload.profile?.profiles?.length > 1) {
+    showProfiles(payload.profile);
+  } else {
+    body.dataset.screen = state.screen = 'home';
+  }
   wake();
 
   window.addEventListener('keydown', (event) => {

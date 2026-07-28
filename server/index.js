@@ -4,6 +4,8 @@
 
 import { createServer } from 'node:http';
 import { createReadStream, existsSync, statSync } from 'node:fs';
+import * as youtube from './youtube.js';
+import * as media from './media.js';
 import { join, extname, normalize } from 'node:path';
 import { networkInterfaces } from 'node:os';
 import { WebSocketServer, WebSocket } from 'ws';
@@ -95,8 +97,10 @@ function readBody(req) {
 }
 
 async function homePayload() {
-  const [hero, ...lists] = await Promise.all([
+  const [hero, ytRows, originals, ...lists] = await Promise.all([
     tmdb.heroPick().catch(() => null),
+    youtube.rows().catch(() => []),
+    media.row().catch(() => null),
     ...ROWS.map((r) => tmdb.row(r.key).catch(() => []))
   ]);
 
@@ -106,17 +110,45 @@ async function homePayload() {
   const personal = [];
   const watch = store.watchlist();
   const seen = store.history();
+  const resume = resumeRow(originals);
+
+  if (resume) personal.push(resume);
   if (watch.length) personal.push({ key: 'watchlist', title: 'Do obejrzenia', items: watch });
   if (seen.length) personal.push({ key: 'history', title: 'Ostatnio oglądane', items: seen });
 
   return {
     hero,
-    rows: [...personal, ...rows],
+    rows: [...personal, ...(originals ? [originals] : []), ...rows, ...ytRows],
     providers: providers.all(),
     profile,
     remoteUrl: REMOTE_URL(),
     online: rows.length > 0
   };
+}
+
+function resumeRow(originals) {
+  const entries = store.resumable().slice(0, 12);
+  if (!entries.length) return null;
+
+  const items = [];
+  for (const entry of entries) {
+    const [kind, id] = entry.key.split(':');
+    if (kind === 'original') {
+      const match = originals?.items.find((i) => i.id === id);
+      if (match) items.push({ ...match, position: entry.position });
+    } else if (kind === 'youtube') {
+      items.push({
+        kind: 'youtube',
+        id,
+        title: entry.title || 'YouTube',
+        thumb: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+        duration: entry.duration || null,
+        position: entry.position
+      });
+    }
+  }
+
+  return items.length ? { key: 'resume', title: 'Kontynuuj', wide: true, items } : null;
 }
 
 function broadcast(role, message) {
@@ -221,12 +253,103 @@ const server = createServer(async (req, res) => {
     }
   }
 
+  // Thumbnails are proxied so the canvas that samples their colour stays
+  // untainted, and so the row still draws from cache when the router is down.
+  if (url.pathname === '/thumb') {
+    const source = url.searchParams.get('u') || '';
+    let remote;
+    try {
+      remote = new URL(source);
+    } catch {
+      res.writeHead(400);
+      return res.end();
+    }
+    if (remote.hostname !== 'i.ytimg.com') {
+      res.writeHead(403);
+      return res.end();
+    }
+    try {
+      const upstream = await fetch(remote, { signal: AbortSignal.timeout(9000) });
+      if (!upstream.ok) throw new Error(String(upstream.status));
+      const buf = Buffer.from(await upstream.arrayBuffer());
+      res.writeHead(200, { 'content-type': 'image/jpeg', 'cache-control': 'public, max-age=86400' });
+      return res.end(buf);
+    } catch {
+      res.writeHead(404);
+      return res.end();
+    }
+  }
+
+  if (url.pathname.startsWith('/avatar/')) {
+    const name = url.pathname.slice('/avatar/'.length).replace(/[^a-z0-9._-]/gi, '');
+    const file = join(store.AVATAR_DIR, name);
+    if (!existsSync(file)) {
+      res.writeHead(404);
+      return res.end();
+    }
+    res.writeHead(200, {
+      'content-type': MIME[extname(file)] || 'image/jpeg',
+      'cache-control': 'public, max-age=3600'
+    });
+    return createReadStream(file).pipe(res);
+  }
+
+  if (url.pathname.startsWith('/media-thumb/')) {
+    const id = url.pathname.slice('/media-thumb/'.length).replace(/\.jpg$/, '');
+    const file = media.thumbPath(id);
+    if (!file) {
+      res.writeHead(404);
+      return res.end();
+    }
+    res.writeHead(200, { 'content-type': 'image/jpeg', 'cache-control': 'public, max-age=86400' });
+    return createReadStream(file).pipe(res);
+  }
+
+  if (url.pathname.startsWith('/media-file/')) {
+    const file = media.filePath(url.pathname.slice('/media-file/'.length));
+    if (!file) {
+      res.writeHead(404);
+      return res.end();
+    }
+    const size = statSync(file).size;
+    const range = req.headers.range;
+    const type = extname(file) === '.webm' ? 'video/webm' : 'video/mp4';
+
+    if (range) {
+      const [rawStart, rawEnd] = range.replace(/bytes=/, '').split('-');
+      const start = Number(rawStart) || 0;
+      const end = rawEnd ? Math.min(Number(rawEnd), size - 1) : size - 1;
+      res.writeHead(206, {
+        'content-range': `bytes ${start}-${end}/${size}`,
+        'accept-ranges': 'bytes',
+        'content-length': end - start + 1,
+        'content-type': type
+      });
+      return createReadStream(file, { start, end }).pipe(res);
+    }
+
+    res.writeHead(200, { 'content-length': size, 'accept-ranges': 'bytes', 'content-type': type });
+    return createReadStream(file).pipe(res);
+  }
+
   if (url.pathname.startsWith('/api/')) {
     try {
       if (url.pathname === '/api/home') return json(res, await homePayload());
 
       if (url.pathname === '/api/search') {
-        return json(res, { results: await tmdb.search(url.searchParams.get('q') || '') });
+        const q = url.searchParams.get('q') || '';
+        const [titles, clips] = await Promise.all([
+          tmdb.search(q).catch(() => []),
+          youtube.search(q).catch(() => [])
+        ]);
+        return json(res, { results: titles, youtube: clips });
+      }
+
+      if (url.pathname === '/api/progress' && req.method === 'POST') {
+        const body = await readBody(req);
+        return json(res, {
+          saved: store.saveProgress(body.key, body.position, body.duration, body.title || '')
+        });
       }
 
       if (url.pathname.startsWith('/api/detail/')) {

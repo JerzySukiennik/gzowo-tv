@@ -445,6 +445,181 @@ body[data-screen="search"] #boot { display: none; }
 
 .card[data-focus="on"] .chip { opacity: 1; }
 
+/* ---------- wide cards (video rather than posters) ---------- */
+
+.track--wide .card {
+  flex: 0 0 21rem;
+  width: 21rem;
+  aspect-ratio: 16 / 9;
+}
+
+.card .progress {
+  position: absolute;
+  left: 0.5rem;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  height: 3px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.28);
+  overflow: hidden;
+}
+
+.card .progress i {
+  display: block;
+  height: 100%;
+  background: #fff;
+}
+
+.card .live {
+  position: absolute;
+  left: 0.5rem;
+  top: 0.5rem;
+  padding: 0.18rem 0.45rem;
+  border-radius: 0.3rem;
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  background: #e0243a;
+  color: #fff;
+}
+
+.card .caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 2.2rem 0.7rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.25;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.88), transparent);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ---------- profiles ---------- */
+
+#profiles {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 2.6rem;
+  background: #000;
+  opacity: 0;
+  transition: opacity 420ms ease;
+}
+
+#profiles.shown { opacity: 1; }
+#profiles .eyebrow { margin: 0; }
+
+.faces { display: flex; gap: 2.4rem; }
+
+.face {
+  display: grid;
+  justify-items: center;
+  gap: 0.9rem;
+  transform: scale(1);
+  transition: transform var(--focus-spring);
+  will-change: transform;
+}
+
+.face figure {
+  width: 8.4rem;
+  height: 8.4rem;
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: #131316;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  font-size: 3rem;
+  font-weight: 600;
+  color: rgba(245, 245, 247, 0.7);
+  transition: border-color var(--focus-spring), box-shadow var(--focus-spring);
+}
+
+.face figure img { width: 100%; height: 100%; object-fit: cover; }
+
+.face span {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--dim);
+  transition: color var(--focus-spring);
+}
+
+.face[data-focus="on"] { transform: scale(1.09); }
+.face[data-focus="on"] figure {
+  border-color: #fff;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+}
+.face[data-focus="on"] span { color: var(--ink); }
+
+/* ---------- player ---------- */
+
+#player {
+  position: fixed;
+  inset: 0;
+  z-index: 7;
+  background: #000;
+  opacity: 0;
+  transition: opacity 360ms ease;
+}
+
+#player.shown { opacity: 1; }
+
+#video, #frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+#video { object-fit: contain; background: #000; }
+#frame iframe { width: 100%; height: 100%; border: 0; }
+
+.player-chrome {
+  position: absolute;
+  left: var(--edge);
+  right: var(--edge);
+  bottom: 2.4rem;
+  opacity: 0;
+  transform: translateY(0.8rem);
+  transition: opacity 300ms ease, transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.player-chrome.shown { opacity: 1; transform: translateY(0); }
+
+.player-chrome h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.9rem;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.9);
+}
+
+.scrub {
+  height: 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.24);
+  overflow: hidden;
+}
+
+.scrub span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: #fff;
+  transition: width 220ms linear;
+}
+
 /* ---------- detail ---------- */
 
 #detail {

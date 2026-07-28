@@ -8,7 +8,9 @@ import { ROOT } from './config.js';
 
 const DIR = join(ROOT, 'data');
 const FILE = join(DIR, 'store.json');
+export const AVATAR_DIR = join(ROOT, 'media', 'avatars');
 mkdirSync(DIR, { recursive: true });
+mkdirSync(AVATAR_DIR, { recursive: true });
 
 const PROFILES = [
   { id: 'jurek', name: 'Jurek' },
@@ -21,7 +23,8 @@ const empty = () => ({
   profiles: PROFILES,
   active: 'jurek',
   history: Object.fromEntries(PROFILES.map((p) => [p.id, []])),
-  watchlist: Object.fromEntries(PROFILES.map((p) => [p.id, []]))
+  watchlist: Object.fromEntries(PROFILES.map((p) => [p.id, []])),
+  progress: Object.fromEntries(PROFILES.map((p) => [p.id, {}]))
 });
 
 let state = load();
@@ -36,7 +39,8 @@ function load() {
       ...parsed,
       profiles: PROFILES,
       history: { ...base.history, ...(parsed.history || {}) },
-      watchlist: { ...base.watchlist, ...(parsed.watchlist || {}) }
+      watchlist: { ...base.watchlist, ...(parsed.watchlist || {}) },
+      progress: { ...base.progress, ...(parsed.progress || {}) }
     };
   } catch {
     return empty();
@@ -52,7 +56,48 @@ function persist() {
 }
 
 export function profiles() {
-  return { profiles: state.profiles, active: state.active };
+  return {
+    profiles: state.profiles.map((p) => ({ ...p, avatar: avatarFor(p.id) })),
+    active: state.active
+  };
+}
+
+function avatarFor(id) {
+  for (const ext of ['jpg', 'jpeg', 'png', 'webp']) {
+    if (existsSync(join(AVATAR_DIR, `${id}.${ext}`))) return `/avatar/${id}.${ext}`;
+  }
+  return null;
+}
+
+// Playback position for things we actually play ourselves — Originals and
+// YouTube. Nothing a provider does after the hand-off is visible to us, so their
+// titles never get a position.
+export function progress(key, profile = state.active) {
+  return (state.progress[profile] || {})[key] || null;
+}
+
+export function saveProgress(key, position, duration, title = '', profile = state.active) {
+  const bucket = state.progress[profile] || (state.progress[profile] = {});
+  if (!Number.isFinite(position) || position < 5) return null;
+  if (duration && position > duration - 20) {
+    delete bucket[key];
+  } else {
+    bucket[key] = {
+      position: Math.round(position),
+      duration: Math.round(duration || 0),
+      title,
+      at: Date.now()
+    };
+  }
+  persist();
+  return bucket[key] || null;
+}
+
+export function resumable(profile = state.active) {
+  const bucket = state.progress[profile] || {};
+  return Object.entries(bucket)
+    .sort((a, b) => b[1].at - a[1].at)
+    .map(([key, value]) => ({ key, ...value }));
 }
 
 export function setActive(id) {
