@@ -114,6 +114,14 @@ node server/display.js apply # force the mode and break mirroring
   their own tile, and the remote there is limited to play, pause and scrubbing.
 - **Subtitle and audio-track switching** is per-provider and breaks whenever one
   of them redesigns its player.
+- **The Dock shows Brave, not GZOWO.** The process is Brave, and the Dock name and
+  icon come from the bundle that owns it. Cloning Brave under our own name was
+  tried and measured: an APFS clone costs no disk and takes under a second, but
+  editing `Info.plist` invalidates Apple's signature and the clone refuses to
+  launch — `invalid Info.plist (plist or signature have been modified)`. Ad-hoc
+  re-signing gets it running again at the cost of the entitlements Widevine needs,
+  which trades the icon for playback. Not worth it, and settled: in kiosk on the
+  television the Dock and menu bar are not on screen at all.
 
 ## Layout
 
