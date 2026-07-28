@@ -3,6 +3,7 @@
 
 import { play as playBoot } from './boot.js';
 import { dominant } from './palette.js';
+import { unlock, tick, thud } from './sound.js';
 
 const $ = (id) => document.getElementById(id);
 const body = document.body;
@@ -69,6 +70,7 @@ function handle(message) {
     return;
   }
 
+  unlock();
   wake();
 
   if (message.type === 'wake') return;
@@ -181,6 +183,7 @@ function move(dr, dc) {
     state.pos.i = next;
   }
 
+  tick(dr ? 1.25 : 1);
   paint();
 }
 
@@ -407,6 +410,7 @@ function rampVolume(frame) {
 
 async function openDetail(entry) {
   stopTrailers();
+  thud();
   const data = await api(`/api/detail/${entry.type}/${entry.id}`).catch(() => null);
   if (!data || data.error) return toast('Nie udało się pobrać szczegółów');
 

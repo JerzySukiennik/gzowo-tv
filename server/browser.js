@@ -190,6 +190,12 @@ export async function typeText(target, text) {
   return true;
 }
 
+export async function screenshot(target) {
+  const socket = await connect(target);
+  const result = await send(socket, 'Page.captureScreenshot', { format: 'png' });
+  return result?.data ? Buffer.from(result.data, 'base64') : null;
+}
+
 export async function evaluate(target, expression) {
   const socket = await connect(target);
   const result = await send(socket, 'Runtime.evaluate', {
