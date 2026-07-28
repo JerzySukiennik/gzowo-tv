@@ -114,25 +114,6 @@ h1 {
   will-change: transform;
 }
 
-.kraken {
-  position: absolute;
-  width: 27rem;
-  height: 26rem;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -57%);
-  opacity: 0;
-  overflow: visible;
-  will-change: opacity;
-}
-
-.kraken .ink {
-  stroke-dasharray: 1 1;
-  stroke-dashoffset: 1;
-  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.32));
-  vector-effect: non-scaling-stroke;
-}
-
 .boot-grain {
   position: fixed;
   inset: 0;
