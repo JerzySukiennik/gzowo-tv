@@ -40,7 +40,21 @@ again on the way back.
 npm install
 npm start          # server only, catalogue at http://localhost:7420/tv/
 npm run tv         # server + Brave in kiosk on the television
+npm run login      # one-off: sign in to the providers (see below)
 ```
+
+### Signing in — once
+
+The kiosk runs Brave against its own profile in `data/brave-profile`, so your
+everyday browser is untouched and never has to be closed. That profile starts
+empty, which means none of your existing sessions are there.
+
+`npm run login` opens one tab per service, windowed and with normal browser
+chrome. Sign in to each, close the window, and you are done — those sessions
+live in the profile and survive restarts.
+
+Existing logins cannot be carried over from your normal Brave: that would mean
+copying session cookies around, which is not something this project does.
 
 Or double-click **GZOWO.app** — it does the same thing and can live in the Dock.
 

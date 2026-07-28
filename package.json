@@ -10,6 +10,7 @@
   "scripts": {
     "start": "node server/index.js",
     "tv": "node server/index.js --launch",
+    "login": "node server/login.js",
     "display": "node server/display.js"
   },
   "dependencies": {

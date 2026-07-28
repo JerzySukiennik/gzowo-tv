@@ -1,7 +1,7 @@
-// Remote input. A drag is quantised into focus steps so it feels like the Apple TV
-// trackpad rather than a mouse, and a short still tap commits.
+// Remote input. One swipe moves the focus exactly one step, however far the finger
+// travels; a short still tap commits.
 
-const STEP = 34;
+const STEP = 30;
 const TAP_MS = 260;
 const TAP_SLOP = 12;
 
@@ -62,11 +62,9 @@ pad.addEventListener('pointerdown', (event) => {
     id: event.pointerId,
     startX: event.clientX,
     startY: event.clientY,
-    lastX: event.clientX,
-    lastY: event.clientY,
     at: performance.now(),
     moved: 0,
-    axis: null
+    stepped: false
   };
   showRipple(event);
   send({ type: 'wake' });
@@ -75,30 +73,24 @@ pad.addEventListener('pointerdown', (event) => {
 pad.addEventListener('pointermove', (event) => {
   if (!track || event.pointerId !== track.id) return;
 
-  const dx = event.clientX - track.lastX;
-  const dy = event.clientY - track.lastY;
-  track.moved += Math.abs(dx) + Math.abs(dy);
+  const dx = event.clientX - track.startX;
+  const dy = event.clientY - track.startY;
+  track.moved = Math.max(track.moved, Math.abs(dx), Math.abs(dy));
 
-  if (!track.axis && Math.abs(event.clientX - track.startX) + Math.abs(event.clientY - track.startY) > TAP_SLOP) {
-    track.axis = Math.abs(event.clientX - track.startX) > Math.abs(event.clientY - track.startY) ? 'x' : 'y';
-  }
+  if (track.stepped) return;
+  if (Math.abs(dx) < STEP && Math.abs(dy) < STEP) return;
 
-  if (track.axis === 'x' && Math.abs(dx) >= STEP) {
-    key(dx > 0 ? 'right' : 'left');
-    track.lastX = event.clientX;
-    track.lastY = event.clientY;
-  } else if (track.axis === 'y' && Math.abs(dy) >= STEP) {
-    key(dy > 0 ? 'down' : 'up');
-    track.lastX = event.clientX;
-    track.lastY = event.clientY;
-  }
+  if (Math.abs(dx) > Math.abs(dy)) key(dx > 0 ? 'right' : 'left');
+  else key(dy > 0 ? 'down' : 'up');
+
+  track.stepped = true;
 });
 
 function release(event) {
   if (!track || event.pointerId !== track.id) return;
   const quick = performance.now() - track.at < TAP_MS;
   const still = track.moved < TAP_SLOP;
-  if (quick && still) key('enter');
+  if (!track.stepped && quick && still) key('enter');
   pad.classList.remove('pressed');
   track = null;
 }
