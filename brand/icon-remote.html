@@ -1,0 +1,27 @@
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1024px; height: 1024px; }
+  .tile {
+    position: relative; width: 1024px; height: 1024px;
+    background: linear-gradient(162deg, #1c1c20 0%, #0a0a0c 46%, #000 100%);
+    overflow: hidden;
+  }
+  .seam {
+    position: absolute; left: 19%; right: 19%; top: 636px;
+    height: 13px; border-radius: 13px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.85) 16%, #fff 50%, rgba(255,255,255,.85) 84%, transparent);
+    box-shadow: 0 0 34px rgba(255,255,255,.9), 0 0 110px rgba(255,255,255,.32);
+  }
+  .bloom {
+    position: absolute; left: -10%; right: -10%; top: 470px; height: 360px;
+    background: radial-gradient(ellipse 42% 42% at 50% 50%, rgba(255,255,255,.2), transparent 72%);
+  }
+  .mark {
+    position: absolute; left: 0; right: 0; top: 232px; text-align: center;
+    font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    font-size: 400px; font-weight: 700; line-height: 1; color: #fff;
+    letter-spacing: -0.02em; text-indent: -0.03em;
+    text-shadow: 0 0 46px rgba(255,255,255,.28);
+  }
+</style>
+<div class="tile"><div class="bloom"></div><span class="mark">G</span><span class="seam"></span></div>

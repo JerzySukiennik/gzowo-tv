@@ -1,0 +1,64 @@
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1024px; height: 1024px; background: transparent; display: grid; place-items: center; }
+
+  .tile {
+    position: relative;
+    width: 824px;
+    height: 824px;
+    border-radius: 185px;
+    background: linear-gradient(162deg, #202024 0%, #0c0c0e 44%, #000 100%);
+    box-shadow:
+      inset 0 3px 0 rgba(255, 255, 255, 0.18),
+      inset 0 -3px 0 rgba(0, 0, 0, 0.7);
+    overflow: hidden;
+  }
+
+  /* the seam of light the boot sequence opens with — the mark rises out of it */
+  .seam {
+    position: absolute;
+    left: 13%;
+    right: 13%;
+    top: 598px;
+    height: 13px;
+    border-radius: 13px;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.85) 16%,
+      #fff 50%,
+      rgba(255, 255, 255, 0.85) 84%,
+      transparent);
+    box-shadow: 0 0 34px rgba(255, 255, 255, 0.9), 0 0 110px rgba(255, 255, 255, 0.32);
+  }
+
+  .bloom {
+    position: absolute;
+    left: -10%;
+    right: -10%;
+    top: 430px;
+    height: 360px;
+    background: radial-gradient(ellipse 46% 42% at 50% 50%, rgba(255, 255, 255, 0.2), transparent 72%);
+  }
+
+  .mark {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 132px;
+    text-align: center;
+    font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    font-size: 440px;
+    font-weight: 700;
+    line-height: 1;
+    color: #fff;
+    letter-spacing: -0.02em;
+    text-indent: -0.03em;
+    text-shadow: 0 0 46px rgba(255, 255, 255, 0.28);
+  }
+</style>
+
+<div class="tile">
+  <div class="bloom"></div>
+  <span class="mark">G</span>
+  <span class="seam"></span>
+</div>
