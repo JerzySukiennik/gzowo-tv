@@ -1,31 +1,80 @@
 #!/bin/bash
-# Brings the whole system up: forces the TV into its native mode, starts the
-# server, opens Brave in kiosk on the television. Quitting kills everything.
+# Toggle. Click once and everything comes up; click again and everything is put
+# away. The launcher detaches and exits straight away — a bundle whose executable
+# never returns is what macOS treats as a hung application and offers to force
+# quit, which is what happened when this waited on the server.
+#
+# Liveness is tracked with a pid file, falling back to matching the command line.
+# The pid file is the reliable signal, but a bundled app cannot always rewrite a
+# file some other process created, so it is never allowed to be load-bearing.
 
 set -u
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "$HERE" || exit 1
 
-export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 
-if ! command -v node >/dev/null 2>&1; then
-  osascript -e 'display alert "GZOWO" message "Node.js not found. Install it and try again."'
-  exit 1
-fi
-
+SERVER="$HERE/server/index.js"
+PIDFILE="$HERE/data/server.pid"
+BROWSER_MATCH="user-data-dir=$HERE/data/brave-profile"
 LOG="$HERE/data/gzowo.log"
+
 mkdir -p "$HERE/data"
 
-pkill -f "gzowo-tv/server/index.js" 2>/dev/null
-
-node server/index.js --launch >>"$LOG" 2>&1 &
-SERVER_PID=$!
-
-cleanup() {
-  kill "$SERVER_PID" 2>/dev/null
-  pkill -f "user-data-dir=$HERE/data/brave-profile" 2>/dev/null
+notify() {
+  osascript -e "display notification \"$1\" with title \"GZOWO\"" >/dev/null 2>&1 &
 }
-trap cleanup EXIT INT TERM
 
-wait "$SERVER_PID"
+fail() {
+  osascript -e "display alert \"GZOWO\" message \"$1\"" >/dev/null 2>&1
+  exit 1
+}
+
+pid_from_file() {
+  [ -f "$PIDFILE" ] || return 1
+  local pid
+  pid="$(cat "$PIDFILE" 2>/dev/null)"
+  [ -n "$pid" ] || return 1
+  kill -0 "$pid" 2>/dev/null || return 1
+  ps -p "$pid" -o command= 2>/dev/null | grep -q "$SERVER" || return 1
+  printf '%s' "$pid"
+}
+
+running() {
+  pid_from_file >/dev/null && return 0
+  pgrep -f "$SERVER" >/dev/null 2>&1
+}
+
+stop() {
+  pkill -f "$BROWSER_MATCH" >/dev/null 2>&1
+  local pid
+  pid="$(pid_from_file 2>/dev/null)" && kill "$pid" 2>/dev/null
+  pkill -f "$SERVER" >/dev/null 2>&1
+  rm -f "$PIDFILE" 2>/dev/null
+}
+
+if running; then
+  stop
+  notify "Wyłączone"
+  exit 0
+fi
+
+stop
+command -v node >/dev/null 2>&1 || fail "Nie znaleziono Node.js. Zainstaluj go i spróbuj ponownie."
+
+printf '\n=== %s start\n' "$(date '+%Y-%m-%d %H:%M:%S')" >>"$LOG" 2>&1
+
+nohup node "$SERVER" --launch >>"$LOG" 2>&1 &
+echo $! >"$PIDFILE" 2>/dev/null || printf 'launcher: could not write %s, falling back to process matching\n' "$PIDFILE" >>"$LOG" 2>&1
+disown
+
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+  running && break
+  sleep 0.5
+done
+
+running || fail "Serwer nie wstał. Szczegóły w data/gzowo.log."
+
+notify "Włączone"
+exit 0

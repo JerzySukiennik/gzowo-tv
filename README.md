@@ -56,7 +56,14 @@ live in the profile and survive restarts.
 Existing logins cannot be carried over from your normal Brave: that would mean
 copying session cookies around, which is not something this project does.
 
-Or double-click **GZOWO.app** — it does the same thing and can live in the Dock.
+Or use **GZOWO.app**, which can live in the Dock. It is a toggle: the first click
+brings the server and the kiosk up, the second puts them away. Either way the
+launcher detaches and exits immediately, so macOS never sees a bundled process
+sitting there refusing to finish — that is what produced the force-quit prompt on
+first launch, and the reason it appeared to work on the second attempt was only
+that the first one had already left a server behind.
+
+A notification confirms which way it went. Server output goes to `data/gzowo.log`.
 
 The remote address is printed on start and shown on the pairing screen. Open it
 on the phone, add it to the home screen once, and it behaves like a native app.
