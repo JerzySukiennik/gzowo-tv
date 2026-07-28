@@ -113,6 +113,7 @@ function sleep() {
 
 /* ---------- screensaver ---------- */
 
+const SEGMENT = 40000;
 const idle = { clips: [], index: 0, current: 'a', timer: null, clock: null };
 
 async function loadClips() {
@@ -159,8 +160,15 @@ function playClip() {
   const next = $(`idle-${idle.current === 'a' ? 'b' : 'a'}`);
 
   next.src = clips[idle.index % clips.length].src;
-  next.currentTime = 0;
-  next.play().catch(() => {});
+
+  // The clips run for minutes and only forty seconds of each is ever shown, so
+  // start somewhere random rather than replaying the same opening every night.
+  next.onloadedmetadata = () => {
+    const span = (next.duration || 0) - SEGMENT / 1000 - 2;
+    next.currentTime = span > 5 ? Math.random() * span : 0;
+    next.play().catch(() => {});
+  };
+
   next.classList.add('on');
   showing.classList.remove('on');
   idle.current = idle.current === 'a' ? 'b' : 'a';
@@ -168,7 +176,7 @@ function playClip() {
 
   next.onended = () => playClip();
   clearTimeout(idle.timer);
-  idle.timer = setTimeout(() => playClip(), 40000);
+  idle.timer = setTimeout(() => playClip(), SEGMENT);
 }
 
 function stopScreensaver() {

@@ -28,7 +28,10 @@ html, body {
   cursor: none;
 }
 
-body[data-screen="idle"] > *:not(#ambient) { opacity: 0; pointer-events: none; }
+body[data-screen="idle"] > *:not(#ambient):not(#screensaver) {
+  opacity: 0;
+  pointer-events: none;
+}
 
 #ambient {
   position: fixed;
