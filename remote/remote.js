@@ -32,7 +32,11 @@ function connect() {
       return;
     }
     if (message.type !== 'state') return;
-    if (message.mode === 'provider') status.textContent = message.title || 'Serwis';
+    const standby = message.mode === 'standby';
+    document.body.dataset.standby = standby ? 'on' : 'off';
+
+    if (standby) status.textContent = 'Uśpione — naciśnij zasilanie';
+    else if (message.mode === 'provider') status.textContent = message.title || 'Serwis';
     else if (message.mode === 'native') status.textContent = 'Aplikacja TV';
     else status.textContent = message.tvConnected ? 'GZOWO' : 'Czekam na telewizor';
   });
@@ -110,12 +114,13 @@ function showRipple(event) {
 
 /* ---------- buttons ---------- */
 
-for (const button of document.querySelectorAll('.key')) {
+for (const button of document.querySelectorAll('.key, .power')) {
   button.addEventListener('pointerdown', (event) => {
     event.preventDefault();
     const name = button.dataset.key;
     const action = button.dataset.action;
     if (name) return key(name);
+    if (action === 'power') return send({ type: 'power' });
     if (action === 'home') return send({ type: 'home' });
     if (action === 'keyboard') return openKeyboard();
   });

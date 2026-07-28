@@ -33,6 +33,13 @@ body[data-screen="idle"] > *:not(#ambient):not(#screensaver) {
   pointer-events: none;
 }
 
+/* Standby. The television is left switched on, so the resting state has to be
+   nothing at all — on an OLED that is indistinguishable from a dark screen. */
+body[data-screen="standby"] > * {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
 #ambient {
   position: fixed;
   inset: -20%;

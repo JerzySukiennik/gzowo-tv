@@ -466,6 +466,16 @@ wss.on('connection', (socket, req) => {
 
     if (role === 'remote') {
       if (message.type === 'home') return void (await returnHome());
+
+      // Power reads as one step back each press: out of a provider, then to
+      // sleep, then awake again.
+      if (message.type === 'power') {
+        if (session.mode === 'provider' || session.mode === 'native') {
+          return void (await returnHome());
+        }
+        return void broadcast('tv', message);
+      }
+
       return void (await handleRemoteInput(message));
     }
 

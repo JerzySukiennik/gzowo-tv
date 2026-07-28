@@ -20,7 +20,17 @@ function guard(promise, ms) {
   return Promise.race([promise, new Promise((resolve) => setTimeout(resolve, ms))]);
 }
 
+// Every animation here fills forwards and the sequence can now run more than
+// once per page — waking from standby replays it — so anything the last run left
+// behind has to be cleared first.
+function reset(root) {
+  for (const animation of root.getAnimations({ subtree: true })) animation.cancel();
+  root.style.opacity = '';
+  for (const el of root.querySelectorAll('[style]')) el.removeAttribute('style');
+}
+
 export function play(root) {
+  reset(root);
   const stage = root.querySelector('.boot-stage');
   const glyphs = [...root.querySelectorAll('.glyph')];
   const seed = root.querySelector('.seed');

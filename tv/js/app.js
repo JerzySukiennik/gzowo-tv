@@ -66,11 +66,21 @@ function handle(message) {
     return;
   }
 
+  if (message.type === 'power') {
+    unlock();
+    return state.screen === 'standby' ? beginBoot() : goStandby();
+  }
+
   if (message.type !== 'key' && message.type !== 'text' && message.type !== 'wake') {
     return;
   }
 
   unlock();
+
+  // Nothing reaches the interface while the system is resting; the first thing
+  // the remote sends is what starts it.
+  if (state.screen === 'standby') return beginBoot();
+
   wake();
 
   if (message.type === 'wake') return;
@@ -90,6 +100,49 @@ function route(key) {
   if (state.screen === 'detail') return detailKey(key);
   if (state.screen === 'search') return searchKey(key);
   return homeKey(key);
+}
+
+/* ---------- standby ---------- */
+
+async function beginBoot() {
+  if (state.booting) return;
+  state.booting = true;
+
+  body.dataset.screen = state.screen = 'boot';
+  tell({ type: 'mode', mode: 'ui' });
+
+  const profile = state.home?.profile;
+  const needsProfile = profile?.profiles?.length > 1;
+  if (needsProfile) showProfiles(profile);
+
+  await playBoot($('boot'));
+
+  if (!needsProfile) body.dataset.screen = state.screen = 'home';
+  state.booting = false;
+  wake();
+}
+
+function goStandby() {
+  stopTrailers();
+  stopScreensaver();
+  clearTimeout(state.idleTimer);
+
+  if (player.ticker) clearInterval(player.ticker);
+  for (const id of ['detail', 'search', 'profiles', 'player']) {
+    const el = $(id);
+    el.classList.remove('shown');
+    el.hidden = true;
+  }
+  const video = $('video');
+  video.pause();
+  video.removeAttribute('src');
+  if (player.yt?.destroy) player.yt.destroy();
+  player.yt = null;
+  $('frame').replaceChildren();
+
+  state.pos = { s: 0, i: 0 };
+  body.dataset.screen = state.screen = 'standby';
+  tell({ type: 'mode', mode: 'standby' });
 }
 
 /* ---------- idle ---------- */
@@ -1077,16 +1130,13 @@ async function main() {
   connect();
 
   const resuming = new URLSearchParams(location.search).has('resume');
-  if (resuming) {
-    $('boot').style.opacity = '0';
-    $('boot').hidden = true;
-  }
 
-  const boot = resuming ? Promise.resolve() : playBoot($('boot'));
+  // Coming back from a provider is not a fresh start — no standby, no intro.
+  body.dataset.screen = state.screen = resuming ? 'home' : 'standby';
+
   const payload = await api('/api/home').catch(() => null);
 
   if (!payload || payload.error) {
-    await boot;
     $('pairing').hidden = false;
     $('pair-url').textContent = 'Serwer nie odpowiada';
     body.dataset.screen = state.screen = 'error';
@@ -1098,15 +1148,13 @@ async function main() {
   $('home').hidden = false;
   buildHome(payload);
 
-  // The profile screen goes up behind the boot overlay, not after it. Revealing
-  // it once the overlay had already faded showed a frame of the catalogue first.
-  const needsProfile = !resuming && payload.profile?.profiles?.length > 1;
-  if (needsProfile) showProfiles(payload.profile);
+  if (resuming) {
+    body.dataset.screen = state.screen = 'home';
+    wake();
+    return;
+  }
 
-  await boot;
-
-  if (!needsProfile) body.dataset.screen = state.screen = 'home';
-  wake();
+  tell({ type: 'mode', mode: 'standby' });
 
   window.addEventListener('keydown', (event) => {
     const map = {
