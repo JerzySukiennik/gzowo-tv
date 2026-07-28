@@ -95,7 +95,7 @@ async function makeThumb(path, id, duration) {
 export async function scan(force = false) {
   if (!force && Date.now() - cached.at < SCAN_TTL) return cached.items;
 
-  const files = walk(MEDIA_DIR);
+  const files = walk(MEDIA_DIR).filter((path) => !path.startsWith(SCREENSAVER_DIR));
   const items = [];
 
   for (const path of files) {
@@ -134,6 +134,31 @@ export function thumbPath(id) {
 
 export function filePath(id) {
   const match = cached.items.find((item) => item.id === id);
+  return match && existsSync(match.path) ? match.path : null;
+}
+
+export const SCREENSAVER_DIR = join(MEDIA_DIR, 'screensaver');
+mkdirSync(SCREENSAVER_DIR, { recursive: true });
+
+let idle = { at: 0, items: [] };
+
+// Clips shown once the room has gone quiet. Kept separate from Originals so a
+// screensaver loop never turns up in the catalogue as something to watch.
+export function screensaver() {
+  if (Date.now() - idle.at < SCAN_TTL) return idle.items;
+
+  const items = walk(SCREENSAVER_DIR).map((path) => ({
+    id: idFor(path),
+    src: `/screensaver-file/${idFor(path)}`,
+    path
+  }));
+
+  idle = { at: Date.now(), items };
+  return items;
+}
+
+export function screensaverPath(id) {
+  const match = screensaver().find((item) => item.id === id);
   return match && existsSync(match.path) ? match.path : null;
 }
 

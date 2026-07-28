@@ -9,6 +9,7 @@ import * as media from './media.js';
 import { join, extname, normalize } from 'node:path';
 import { networkInterfaces } from 'node:os';
 import { WebSocketServer, WebSocket } from 'ws';
+import QRCode from 'qrcode';
 import { ROOT, config } from './config.js';
 import * as tmdb from './tmdb.js';
 import * as store from './store.js';
@@ -255,6 +256,22 @@ const server = createServer(async (req, res) => {
 
   // Thumbnails are proxied so the canvas that samples their colour stays
   // untainted, and so the row still draws from cache when the router is down.
+  if (url.pathname === '/qr.svg') {
+    try {
+      const svg = await QRCode.toString(REMOTE_URL(), {
+        type: 'svg',
+        margin: 0,
+        errorCorrectionLevel: 'M',
+        color: { dark: '#ffffff', light: '#00000000' }
+      });
+      res.writeHead(200, { 'content-type': 'image/svg+xml', 'cache-control': 'no-store' });
+      return res.end(svg);
+    } catch {
+      res.writeHead(500);
+      return res.end();
+    }
+  }
+
   if (url.pathname === '/thumb') {
     const source = url.searchParams.get('u') || '';
     let remote;
@@ -305,8 +322,10 @@ const server = createServer(async (req, res) => {
     return createReadStream(file).pipe(res);
   }
 
-  if (url.pathname.startsWith('/media-file/')) {
-    const file = media.filePath(url.pathname.slice('/media-file/'.length));
+  if (url.pathname.startsWith('/media-file/') || url.pathname.startsWith('/screensaver-file/')) {
+    const file = url.pathname.startsWith('/media-file/')
+      ? media.filePath(url.pathname.slice('/media-file/'.length))
+      : media.screensaverPath(url.pathname.slice('/screensaver-file/'.length));
     if (!file) {
       res.writeHead(404);
       return res.end();
@@ -358,6 +377,11 @@ const server = createServer(async (req, res) => {
         return json(res, { ...data, saved: store.inWatchlist(data) });
       }
 
+      if (url.pathname.startsWith('/api/season/')) {
+        const [, , , id, number] = url.pathname.split('/');
+        return json(res, await tmdb.season(id, number));
+      }
+
       if (url.pathname === '/api/open' && req.method === 'POST') {
         const body = await readBody(req);
         return json(res, await openProvider(body));
@@ -375,6 +399,10 @@ const server = createServer(async (req, res) => {
       if (url.pathname === '/api/watchlist' && req.method === 'POST') {
         const body = await readBody(req);
         return json(res, store.toggleWatchlist(body.item));
+      }
+
+      if (url.pathname === '/api/screensaver') {
+        return json(res, { clips: media.screensaver().map(({ id, src }) => ({ id, src })) });
       }
 
       if (url.pathname === '/api/status') {

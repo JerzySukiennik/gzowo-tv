@@ -520,6 +520,32 @@ body[data-screen="search"] #boot { display: none; }
 
 .faces { display: flex; gap: 2.4rem; }
 
+.pair-card {
+  position: absolute;
+  right: var(--edge);
+  bottom: 2.6rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.pair-card img { width: 5.4rem; height: 5.4rem; display: block; }
+.pair-card .eyebrow { margin-bottom: 0.35rem; }
+.pair-hint { font-size: 0.85rem; font-weight: 600; }
+
+.pair-small {
+  margin-top: 0.2rem;
+  font-size: 0.68rem;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
 .face {
   display: grid;
   justify-items: center;
@@ -559,6 +585,45 @@ body[data-screen="search"] #boot { display: none; }
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
 }
 .face[data-focus="on"] span { color: var(--ink); }
+
+/* ---------- screensaver ---------- */
+
+#screensaver {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  background: #000;
+  opacity: 0;
+  transition: opacity 1600ms ease;
+}
+
+#screensaver.shown { opacity: 1; }
+
+#screensaver video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 2200ms ease;
+}
+
+#screensaver video.on { opacity: 1; }
+
+/* The clock drifts so nothing bright sits on the same pixels for hours. */
+.idle-clock {
+  position: absolute;
+  left: 8%;
+  top: 78%;
+  font-size: 3.6rem;
+  font-weight: 200;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.72);
+  text-shadow: 0 2px 30px rgba(0, 0, 0, 0.8);
+  transition: left 3000ms ease, top 3000ms ease;
+}
 
 /* ---------- player ---------- */
 
@@ -642,6 +707,80 @@ body[data-screen="search"] #boot { display: none; }
 }
 
 .detail-body .overview { -webkit-line-clamp: 4; }
+
+.seasons { margin-top: 0.9rem; }
+
+.seasons .action {
+  padding: 0.5rem 1.05rem;
+  font-size: 0.82rem;
+}
+
+.episode-strip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2.4rem;
+  z-index: 3;
+}
+
+.episode-strip .track { padding-bottom: 0.4rem; }
+
+#detail.has-episodes .detail-body { bottom: 17.5rem; }
+#detail.has-episodes .cast { display: none; }
+#detail.has-episodes .overview { -webkit-line-clamp: 2; }
+
+.episode {
+  position: relative;
+  flex: 0 0 17rem;
+  width: 17rem;
+  aspect-ratio: 16 / 9;
+  border-radius: 0.6rem;
+  overflow: hidden;
+  background: #101013;
+  transform: scale(1);
+  transition: transform var(--focus-spring), box-shadow var(--focus-spring);
+  will-change: transform;
+}
+
+.episode img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 420ms ease; }
+.episode img.ready { opacity: 1; }
+
+.episode .label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 2rem 0.65rem 0.55rem;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.episode .label b {
+  display: block;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: rgba(245, 245, 247, 0.55);
+  margin-bottom: 0.15rem;
+}
+
+.episode::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 255, 255, 0);
+  transition: border-color var(--focus-spring);
+}
+
+.episode[data-focus="on"] {
+  transform: scale(1.07);
+  box-shadow: 0 20px 46px rgba(0, 0, 0, 0.7);
+}
+
+.episode[data-focus="on"]::after { border-color: rgba(255, 255, 255, 0.85); }
 
 .cast {
   display: flex;

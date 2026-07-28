@@ -135,8 +135,15 @@ export async function providersFor(type, id) {
 
 export async function detail(type, id) {
   const data = await get(`/${type}/${id}`, {
-    append_to_response: 'credits,videos,release_dates,content_ratings'
+    append_to_response: 'credits,videos,release_dates,content_ratings,images',
+    include_image_language: 'null,en'
   }, TTL.detail);
+
+  // TMDB's default backdrop is often a promo image with the service's logo
+  // burned into it. Prefer one with no text on it at all.
+  const textless = (data.images?.backdrops || [])
+    .filter((b) => !b.iso_639_1 && b.width >= 1280)
+    .sort((a, b) => b.vote_average - a.vote_average)[0];
 
   const trailer = (data.videos?.results || [])
     .filter((v) => v.site === 'YouTube' && ['Trailer', 'Teaser'].includes(v.type))
@@ -146,6 +153,7 @@ export async function detail(type, id) {
 
   return {
     ...card({ ...data, media_type: type }),
+    backdrop: textless?.file_path || data.backdrop_path || null,
     tagline: data.tagline || '',
     runtime,
     genres: (data.genres || []).map((g) => g.name),
@@ -160,6 +168,24 @@ export async function detail(type, id) {
       .map((s) => ({ number: s.season_number, name: s.name, episodes: s.episode_count })),
     trailer: trailer ? trailer.key : null,
     providers: await providersFor(type, id)
+  };
+}
+
+export async function season(showId, number) {
+  const data = await get(`/tv/${showId}/season/${number}`, {}, TTL.detail);
+  return {
+    number: data.season_number,
+    name: data.name,
+    overview: data.overview || '',
+    episodes: (data.episodes || []).map((e) => ({
+      number: e.episode_number,
+      title: e.name || `Odcinek ${e.episode_number}`,
+      overview: e.overview || '',
+      still: e.still_path || null,
+      runtime: e.runtime || null,
+      aired: e.air_date || null,
+      rating: e.vote_average ? Math.round(e.vote_average * 10) / 10 : null
+    }))
   };
 }
 

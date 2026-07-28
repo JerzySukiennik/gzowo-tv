@@ -35,6 +35,20 @@
 <section id="profiles" hidden>
   <p class="eyebrow">Kto ogląda?</p>
   <div class="faces" id="faces"></div>
+  <aside class="pair-card">
+    <img id="qr" alt="" src="/qr.svg">
+    <div>
+      <p class="eyebrow">Pilot</p>
+      <p class="pair-hint">Zeskanuj aparatem</p>
+      <p class="pair-small" id="pair-small"></p>
+    </div>
+  </aside>
+</section>
+
+<section id="screensaver" hidden>
+  <video id="idle-a" muted playsinline></video>
+  <video id="idle-b" muted playsinline></video>
+  <div class="idle-clock" id="idle-clock"></div>
 </section>
 
 <section id="player" hidden>
@@ -75,7 +89,11 @@
     <p class="meta" id="detail-meta"></p>
     <p class="overview" id="detail-overview"></p>
     <div class="actions" id="detail-actions"></div>
+    <div class="actions seasons" id="detail-seasons" hidden></div>
     <div class="cast" id="detail-cast"></div>
+  </div>
+  <div class="episode-strip" id="detail-episodes" hidden>
+    <div class="track track--wide" id="episode-track"></div>
   </div>
 </section>
 

@@ -96,6 +96,7 @@ function route(key) {
 
 function wake() {
   if (state.screen === 'idle') {
+    stopScreensaver();
     body.dataset.screen = state.screen = 'home';
     tell({ type: 'mode', mode: 'ui' });
   }
@@ -104,8 +105,85 @@ function wake() {
 }
 
 function sleep() {
+  if (state.screen === 'player') return;
   stopTrailers();
   body.dataset.screen = state.screen = 'idle';
+  startScreensaver();
+}
+
+/* ---------- screensaver ---------- */
+
+const idle = { clips: [], index: 0, current: 'a', timer: null, clock: null };
+
+async function loadClips() {
+  if (idle.clips.length) return idle.clips;
+  const data = await api('/api/screensaver').catch(() => null);
+  idle.clips = data?.clips || [];
+  return idle.clips;
+}
+
+function drawClock() {
+  const now = new Date();
+  $('idle-clock').textContent =
+    `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+}
+
+function driftClock() {
+  const el = $('idle-clock');
+  el.style.left = `${8 + Math.floor(Math.random() * 60)}%`;
+  el.style.top = `${18 + Math.floor(Math.random() * 62)}%`;
+}
+
+async function startScreensaver() {
+  const clips = await loadClips();
+  const stage = $('screensaver');
+
+  drawClock();
+  driftClock();
+  clearInterval(idle.clock);
+  idle.clock = setInterval(() => { drawClock(); driftClock(); }, 60000);
+
+  reveal(stage);
+
+  if (!clips.length) return;
+
+  idle.index = Math.floor(Math.random() * clips.length);
+  playClip();
+}
+
+function playClip() {
+  const clips = idle.clips;
+  if (!clips.length) return;
+
+  const showing = $(`idle-${idle.current}`);
+  const next = $(`idle-${idle.current === 'a' ? 'b' : 'a'}`);
+
+  next.src = clips[idle.index % clips.length].src;
+  next.currentTime = 0;
+  next.play().catch(() => {});
+  next.classList.add('on');
+  showing.classList.remove('on');
+  idle.current = idle.current === 'a' ? 'b' : 'a';
+  idle.index += 1;
+
+  next.onended = () => playClip();
+  clearTimeout(idle.timer);
+  idle.timer = setTimeout(() => playClip(), 40000);
+}
+
+function stopScreensaver() {
+  clearInterval(idle.clock);
+  clearTimeout(idle.timer);
+  for (const id of ['idle-a', 'idle-b']) {
+    const el = $(id);
+    el.pause();
+    el.classList.remove('on');
+    el.removeAttribute('src');
+    el.load();
+  }
+  const stage = $('screensaver');
+  stage.classList.remove('shown');
+  setTimeout(() => { stage.hidden = true; }, 900);
 }
 
 /* ---------- focus ---------- */
@@ -478,10 +556,7 @@ async function openDetail(entry) {
     return span;
   }));
 
-  const actions = providerActions(data, $('detail-actions'));
-  state.detailActions = actions;
-  state.detailIndex = 0;
-  paintDetail();
+  buildDetailSections(data);
 
   reveal($('detail'));
   body.dataset.screen = state.screen = 'detail';
@@ -494,25 +569,135 @@ async function openDetail(entry) {
   }
 }
 
-function paintDetail() {
-  state.detailActions?.forEach((item, i) => {
-    item.el.dataset.focus = i === state.detailIndex ? 'on' : 'off';
+function buildDetailSections(data) {
+  const sections = [{
+    el: $('detail-actions'),
+    items: providerActions(data, $('detail-actions'))
+  }];
+
+  const seasonHost = $('detail-seasons');
+  const stripHost = $('detail-episodes');
+
+  if (data.type === 'tv' && data.seasons?.length) {
+    const items = data.seasons.map((s) =>
+      actionButton(s.name, `${s.episodes} odc.`, () => loadSeason(data, s.number)));
+    seasonHost.replaceChildren(...items.map((i) => i.el));
+    seasonHost.hidden = false;
+    sections.push({ el: seasonHost, items });
+    sections.push({ el: stripHost, items: [], track: $('episode-track') });
+    $('detail').classList.add('has-episodes');
+    loadSeason(data, data.seasons[0].number, false);
+  } else {
+    seasonHost.hidden = true;
+    stripHost.hidden = true;
+    $('detail').classList.remove('has-episodes');
+  }
+
+  state.detailSections = sections;
+  state.detailPos = { s: 0, i: 0 };
+  paintDetail();
+}
+
+async function loadSeason(show, number, moveFocus = true) {
+  const data = await api(`/api/season/${show.id}/${number}`).catch(() => null);
+  const track = $('episode-track');
+  const strip = $('detail-episodes');
+
+  if (!data?.episodes?.length) {
+    strip.hidden = true;
+    return;
+  }
+
+  const items = data.episodes.map((episode) => {
+    const el = document.createElement('div');
+    el.className = 'episode';
+    el.dataset.focus = 'off';
+
+    if (episode.still) {
+      const img = new Image();
+      img.decoding = 'async';
+      img.alt = episode.title;
+      img.src = `/img/w300${episode.still}`;
+      img.addEventListener('load', () => img.classList.add('ready'));
+      el.append(img);
+    }
+
+    const label = document.createElement('div');
+    label.className = 'label';
+    const tag = document.createElement('b');
+    tag.textContent = `S${String(number).padStart(2, '0')}E${String(episode.number).padStart(2, '0')}` +
+      (episode.runtime ? ` · ${episode.runtime} min` : '');
+    label.append(tag, document.createTextNode(episode.title));
+    el.append(label);
+
+    track.append(el);
+    return { el, action: () => playFirstProvider(show) };
   });
+
+  track.replaceChildren(...items.map((i) => i.el));
+  strip.hidden = false;
+
+  const section = state.detailSections?.[2];
+  if (section) {
+    section.items = items;
+    if (moveFocus) {
+      state.detailPos = { s: 2, i: 0 };
+      tick();
+    }
+    paintDetail();
+  }
+}
+
+function playFirstProvider(title) {
+  const first = (title.providers || []).find((p) => p.kind === 'browser');
+  if (!first) return toast('Nie ma tego w waszych serwisach');
+  return launch(first.key, title);
+}
+
+function paintDetail() {
+  const sections = state.detailSections || [];
+  sections.forEach((section, s) => {
+    section.items.forEach((item, i) => {
+      item.el.dataset.focus = s === state.detailPos.s && i === state.detailPos.i ? 'on' : 'off';
+    });
+  });
+
+  const active = sections[state.detailPos.s];
+  if (active?.track) {
+    const card = active.items[state.detailPos.i]?.el;
+    if (card) {
+      const step = card.offsetWidth + 0.85 * 18;
+      active.track.style.transform = `translate3d(${-Math.max(0, (state.detailPos.i - 1) * step)}px,0,0)`;
+    }
+  }
 }
 
 function detailKey(key) {
-  const actions = state.detailActions || [];
-  if (key === 'left') {
-    state.detailIndex = Math.max(0, state.detailIndex - 1);
-    return paintDetail();
-  }
-  if (key === 'right') {
-    state.detailIndex = Math.min(actions.length - 1, state.detailIndex + 1);
-    return paintDetail();
-  }
-  if (key === 'enter') return actions[state.detailIndex]?.action();
+  const sections = state.detailSections || [];
+  const pos = state.detailPos;
+
   if (key === 'escape' || key === 'back') return closeDetail();
-  return undefined;
+
+  if (key === 'down' || key === 'up') {
+    const step = key === 'down' ? 1 : -1;
+    let next = pos.s;
+    for (let i = pos.s + step; i >= 0 && i < sections.length; i += step) {
+      if (sections[i].items.length) { next = i; break; }
+    }
+    if (next === pos.s) return undefined;
+    state.detailPos = { s: next, i: 0 };
+    tick(1.25);
+    return paintDetail();
+  }
+
+  const items = sections[pos.s]?.items || [];
+  if (key === 'left') state.detailPos.i = Math.max(0, pos.i - 1);
+  else if (key === 'right') state.detailPos.i = Math.min(items.length - 1, pos.i + 1);
+  else if (key === 'enter') return items[pos.i]?.action();
+  else return undefined;
+
+  tick();
+  return paintDetail();
 }
 
 function closeDetail() {
@@ -849,8 +1034,8 @@ async function saveToggle(title) {
   if (!result) return;
   toast(result.added ? 'Dodano do listy' : 'Usunięto z listy');
   title.saved = result.added;
-  if (state.screen === 'detail') {
-    state.detailActions = providerActions(title, $('detail-actions'));
+  if (state.screen === 'detail' && state.detailSections?.[0]) {
+    state.detailSections[0].items = providerActions(title, $('detail-actions'));
     paintDetail();
   }
 }
@@ -902,6 +1087,7 @@ async function main() {
   }
 
   $('pair-url').textContent = payload.remoteUrl;
+  $('pair-small').textContent = (payload.remoteUrl || '').replace(/^https?:\/\//, '');
   $('home').hidden = false;
   buildHome(payload);
 
