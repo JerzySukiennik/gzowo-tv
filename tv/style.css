@@ -1,4 +1,4 @@
-/* GZOWO television interface. Black is the resting state; the only colour on
+/* Gzowo TV television interface. Black is the resting state; the only colour on
    screen is borrowed from the artwork currently in focus. */
 
 :root {
@@ -198,6 +198,9 @@ h1 {
   height: 6.6rem;
   will-change: transform;
 }
+
+/* Air before TV so the two words read as a lockup rather than one long word. */
+.glyph--gap { margin-left: 1.6rem; }
 
 .glyph .shaft {
   position: absolute;

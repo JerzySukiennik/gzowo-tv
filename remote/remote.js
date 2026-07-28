@@ -38,7 +38,7 @@ function connect() {
     if (standby) status.textContent = 'Uśpione — naciśnij zasilanie';
     else if (message.mode === 'provider') status.textContent = message.title || 'Serwis';
     else if (message.mode === 'native') status.textContent = 'Aplikacja TV';
-    else status.textContent = message.tvConnected ? 'GZOWO' : 'Czekam na telewizor';
+    else status.textContent = message.tvConnected ? 'Gzowo TV' : 'Czekam na telewizor';
   });
 
   socket.addEventListener('close', () => {

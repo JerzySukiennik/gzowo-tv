@@ -1,4 +1,4 @@
-// GZOWO server: serves the TV interface and the phone remote, proxies TMDB, and
+// Gzowo TV server: serves the TV interface and the phone remote, proxies TMDB, and
 // routes remote input either into the TV interface or straight into whichever
 // provider tab currently owns the screen.
 
@@ -499,7 +499,7 @@ async function main() {
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
       console.error(
-        `\n  Port ${config.port} is already taken — an older GZOWO server is probably still running.\n` +
+        `\n  Port ${config.port} is already taken — an older Gzowo TV server is probably still running.\n` +
         `  Free it with:  lsof -ti tcp:${config.port} | xargs kill\n`
       );
       process.exit(3);
@@ -509,7 +509,7 @@ async function main() {
   });
 
   server.listen(config.port, () => {
-    console.log(`\n  GZOWO`);
+    console.log(`\n  Gzowo TV`);
     console.log(`  TV      http://localhost:${config.port}/tv/`);
     console.log(`  Remote  ${REMOTE_URL()}\n`);
   });

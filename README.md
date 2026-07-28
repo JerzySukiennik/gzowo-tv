@@ -1,4 +1,4 @@
-# GZOWO
+# Gzowo TV
 
 An Apple TV-style catalogue and launcher for the family television in Gzowo. A
 MacBook drives the TV over HDMI, an iPhone is the remote, and the five services
@@ -11,7 +11,7 @@ Netflix, HBO Max, Disney+, Prime Video and Apple TV+ encrypt their video with DR
 licensed browser, none of them offer a playback API, and none can be embedded.
 Even Google TV and Apple TV do not play Netflix themselves — they launch its app.
 
-So GZOWO is **a catalogue and a launcher, never a player**. The parts that are
+So Gzowo TV is **a catalogue and a launcher, never a player**. The parts that are
 genuinely ours are the ones worth building: browsing, search, artwork, focus,
 motion, and a remote that keeps working after a service takes over the screen.
 
@@ -31,7 +31,7 @@ automation mode. That is what lets the phone keep working once Netflix owns the
 screen: keystrokes are dispatched straight into the page over the DevTools
 protocol, so no macOS Accessibility permission and no synthetic mouse are needed.
 
-Tab 0 is the GZOWO interface. Every provider opens as its own tab and is closed
+Tab 0 is the Gzowo TV interface. Every provider opens as its own tab and is closed
 again on the way back.
 
 ## Running it
@@ -56,14 +56,14 @@ live in the profile and survive restarts.
 Existing logins cannot be carried over from your normal Brave: that would mean
 copying session cookies around, which is not something this project does.
 
-Or use **GZOWO.app**, which can live in the Dock. It is a toggle: the first click
+Or use **GzowoTV.app**, which can live in the Dock. It is a toggle: the first click
 brings the server and the kiosk up, the second puts them away. Either way the
 launcher detaches and exits immediately, so macOS never sees a bundled process
 sitting there refusing to finish — that is what produced the force-quit prompt on
 first launch, and the reason it appeared to work on the second attempt was only
 that the first one had already left a server behind.
 
-A notification confirms which way it went. Server output goes to `data/gzowo.log`.
+A notification confirms which way it went. Server output goes to `~/Library/Application Support/GzowoTV/gzowo.log` — runtime state lives there rather than beside the project, because a bundled app cannot reliably rewrite a file another process created inside `~/Downloads`.
 
 The remote address is printed on start and shown on the pairing screen. Open it
 on the phone, add it to the home screen once, and it behaves like a native app.
@@ -114,7 +114,7 @@ node server/display.js apply # force the mode and break mirroring
   their own tile, and the remote there is limited to play, pause and scrubbing.
 - **Subtitle and audio-track switching** is per-provider and breaks whenever one
   of them redesigns its player.
-- **The Dock shows Brave, not GZOWO.** The process is Brave, and the Dock name and
+- **The Dock shows Brave, not Gzowo TV.** The process is Brave, and the Dock name and
   icon come from the bundle that owns it. Cloning Brave under our own name was
   tried and measured: an APFS clone costs no disk and takes under a second, but
   editing `Info.plist` invalidates Apple's signature and the clone refuses to

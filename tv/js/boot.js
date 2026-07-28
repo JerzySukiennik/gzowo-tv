@@ -49,6 +49,7 @@ export function play(root) {
 
   const settle = IMPACT + 1820;
   const total = settle + EXIT;
+  const centre = (glyphs.length - 1) / 2;
 
   stage.animate([
     { transform: 'scale(1.08)' },
@@ -89,7 +90,7 @@ export function play(root) {
 
     glyph.animate([
       { transform: 'translateX(0px)' },
-      { transform: `translateX(${(i - 2) * SPREAD}px)` }
+      { transform: `translateX(${(i - centre) * SPREAD}px)` }
     ], { duration: 1500, delay: IMPACT + 60, easing: OUT, fill: 'forwards' });
   });
 

@@ -1,6 +1,6 @@
 {
-  "name": "GZOWO Remote",
-  "short_name": "GZOWO",
+  "name": "Pilot Gzowo TV",
+  "short_name": "Gzowo TV",
   "start_url": "./",
   "display": "standalone",
   "orientation": "portrait",

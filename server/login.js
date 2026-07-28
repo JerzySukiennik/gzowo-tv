@@ -27,11 +27,11 @@ spawn(config.bravePath, [
   ...SIGN_IN.map(([, url]) => url)
 ], { detached: true, stdio: 'ignore' }).unref();
 
-console.log('\n  Signing in to the GZOWO browser profile\n');
+console.log('\n  Signing in to the Gzowo TV browser profile\n');
 for (const [name] of SIGN_IN) console.log(`  · ${name}`);
 console.log(`
   One tab per service has opened. Sign in to each, then close the window.
-  These sessions are stored in the GZOWO profile and survive restarts, so this
+  These sessions are stored in the Gzowo TV profile and survive restarts, so this
   is a one-off — your everyday Brave is untouched.
 
   If a service refuses to play video, open brave://settings/extensions in this

@@ -1,4 +1,4 @@
-// GZOWO television client. Owns focus, the catalogue, the detail screen and the
+// Gzowo TV television client. Owns focus, the catalogue, the detail screen and the
 // hand-off to a provider. Every input arrives from the phone over the socket.
 
 import { play as playBoot } from './boot.js';
@@ -1078,7 +1078,7 @@ async function launch(providerKey, title) {
 
   if (!result.ok) {
     return toast(result.error === 'brave-not-running'
-      ? 'Uruchom system przez ikonę GZOWO, żeby otwierać serwisy'
+      ? 'Uruchom system przez ikonę Gzowo TV, żeby otwierać serwisy'
       : 'Nie udało się otworzyć serwisu');
   }
 
