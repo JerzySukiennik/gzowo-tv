@@ -472,6 +472,20 @@ wss.on('connection', (socket, req) => {
 async function main() {
   await display.apply();
 
+  // Something already on the port means an older server is still alive. Say so
+  // in one line instead of dying in a stack trace nobody reads.
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(
+        `\n  Port ${config.port} is already taken — an older GZOWO server is probably still running.\n` +
+        `  Free it with:  lsof -ti tcp:${config.port} | xargs kill\n`
+      );
+      process.exit(3);
+    }
+    console.error('[server]', err.message);
+    process.exit(1);
+  });
+
   server.listen(config.port, () => {
     console.log(`\n  GZOWO`);
     console.log(`  TV      http://localhost:${config.port}/tv/`);
