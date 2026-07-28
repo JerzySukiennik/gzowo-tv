@@ -1,10 +1,21 @@
-// Synthesised audio. The boot sting is built rather than sampled so the impact
-// lands on the same frame as the flash, and it is voiced in G — the letter the
-// whole thing is named after.
+// Audio. Interface sounds are real samples (Kenney, CC0) rather than synthesised
+// blips. The boot sting stays synthesised and is voiced in G — the letter the
+// whole thing is named after — because a sample cannot be trusted to land on the
+// same frame as the flash, and the animation is scheduled off its impact offset.
 
 let ctx = null;
 let master = null;
 let verb = null;
+
+const SAMPLES = {
+  tick: '/tv/audio/tick.m4a',
+  enter: '/tv/audio/enter.m4a',
+  back: '/tv/audio/back.m4a',
+  open: '/tv/audio/open.m4a',
+  boot: '/tv/audio/boot.m4a'
+};
+
+const buffers = new Map();
 
 const G2 = 98.00;
 const D3 = 146.83;
@@ -43,7 +54,21 @@ function build() {
   verb.connect(tail).connect(damp).connect(feedback).connect(tail);
   damp.connect(master);
 
+  preload();
   return ctx;
+}
+
+async function preload() {
+  for (const [name, url] of Object.entries(SAMPLES)) {
+    if (buffers.has(name)) continue;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      buffers.set(name, await ctx.decodeAudioData(await res.arrayBuffer()));
+    } catch {
+      // A missing sample just means that cue falls back to the synth below.
+    }
+  }
 }
 
 export function unlock() {
@@ -54,6 +79,27 @@ export function unlock() {
 
 export function available() {
   return Boolean(ctx) && ctx.state === 'running';
+}
+
+function sample(name, gain = 1, send = 0.18, at = 0) {
+  const buffer = buffers.get(name);
+  if (!buffer || !available()) return false;
+
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+
+  const level = ctx.createGain();
+  level.gain.value = gain;
+  source.connect(level).connect(master);
+
+  if (send > 0) {
+    const bus = ctx.createGain();
+    bus.gain.value = send;
+    level.connect(bus).connect(verb);
+  }
+
+  source.start(at || ctx.currentTime);
+  return true;
 }
 
 function noiseBuffer(seconds) {
@@ -85,9 +131,9 @@ function voice(freq, at, { type = 'sine', peak = 0.1, attack = 0.006, decay = 2.
   osc.stop(at + decay + 0.1);
 }
 
-// Returns how many milliseconds after the call the impact will land, so the
+// Returns how many milliseconds after the call the impact lands, so the
 // animation can be scheduled against the same instant.
-export function bootSting(swellMs = 1300) {
+export function bootSting(swellMs = 2000) {
   const audio = unlock();
   if (!audio) return swellMs;
 
@@ -132,13 +178,16 @@ export function bootSting(swellMs = 1300) {
   thump.start(hit);
   thump.stop(hit + 1.6);
 
+  // Sampled transient on the impact frame, over the synthesised body.
+  sample('boot', 0.55, 0.5, hit);
+
   const crack = ctx.createBufferSource();
   crack.buffer = noiseBuffer(0.3);
   const crackFilter = ctx.createBiquadFilter();
   crackFilter.type = 'highpass';
   crackFilter.frequency.value = 3200;
   const crackGain = ctx.createGain();
-  crackGain.gain.setValueAtTime(0.16, hit);
+  crackGain.gain.setValueAtTime(0.11, hit);
   crackGain.gain.exponentialRampToValueAtTime(0.0001, hit + 0.19);
   crack.connect(crackFilter).connect(crackGain).connect(master);
   crackGain.connect(verb);
@@ -160,44 +209,38 @@ export function bootSting(swellMs = 1300) {
   return swellMs;
 }
 
-export function tick(strength = 1) {
+function fallback(freq, peak, decay) {
   if (!available()) return;
   const at = ctx.currentTime;
-
   const osc = ctx.createOscillator();
   osc.type = 'sine';
-  osc.frequency.setValueAtTime(1750, at);
-  osc.frequency.exponentialRampToValueAtTime(880, at + 0.04);
-
+  osc.frequency.setValueAtTime(freq, at);
+  osc.frequency.exponentialRampToValueAtTime(freq * 0.5, at + decay);
   const gain = ctx.createGain();
   gain.gain.setValueAtTime(0.0001, at);
-  gain.gain.exponentialRampToValueAtTime(0.028 * strength, at + 0.004);
-  gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.07);
-
+  gain.gain.exponentialRampToValueAtTime(peak, at + 0.005);
+  gain.gain.exponentialRampToValueAtTime(0.0001, at + decay);
   osc.connect(gain).connect(master);
   osc.start(at);
-  osc.stop(at + 0.09);
+  osc.stop(at + decay + 0.05);
+}
+
+export function tick(strength = 1) {
+  if (sample('tick', 0.3 * strength, 0.1)) return;
+  fallback(1750, 0.028 * strength, 0.07);
 }
 
 export function thud() {
-  if (!available()) return;
-  const at = ctx.currentTime;
+  if (sample('open', 0.42, 0.3)) return;
+  fallback(220, 0.14, 0.42);
+}
 
-  const osc = ctx.createOscillator();
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(220, at);
-  osc.frequency.exponentialRampToValueAtTime(88, at + 0.16);
+export function press() {
+  if (sample('enter', 0.4, 0.2)) return;
+  fallback(880, 0.06, 0.12);
+}
 
-  const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.0001, at);
-  gain.gain.exponentialRampToValueAtTime(0.14, at + 0.008);
-  gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.42);
-
-  const bus = ctx.createGain();
-  bus.gain.value = 0.5;
-
-  osc.connect(gain).connect(master);
-  gain.connect(bus).connect(verb);
-  osc.start(at);
-  osc.stop(at + 0.45);
+export function back() {
+  if (sample('back', 0.38, 0.2)) return;
+  fallback(520, 0.05, 0.14);
 }

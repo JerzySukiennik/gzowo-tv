@@ -3,7 +3,7 @@
 
 import { play as playBoot } from './boot.js';
 import { dominant } from './palette.js';
-import { unlock, tick, thud } from './sound.js';
+import { unlock, tick, thud, press, back } from './sound.js';
 
 const $ = (id) => document.getElementById(id);
 const body = document.body;
@@ -500,6 +500,7 @@ function stopTrailers() {
 
 function restartTrailer() {
   stopTrailers();
+  if (state.screen !== 'home') return;
   if (state.pos.s !== 0) return;
   const key = state.home?.hero?.trailer;
   if (!key) return;
@@ -701,7 +702,7 @@ function detailKey(key) {
   const items = sections[pos.s]?.items || [];
   if (key === 'left') state.detailPos.i = Math.max(0, pos.i - 1);
   else if (key === 'right') state.detailPos.i = Math.min(items.length - 1, pos.i + 1);
-  else if (key === 'enter') return items[pos.i]?.action();
+  else if (key === 'enter') { press(); return items[pos.i]?.action(); }
   else return undefined;
 
   tick();
@@ -709,6 +710,7 @@ function detailKey(key) {
 }
 
 function closeDetail() {
+  back();
   stopTrailers();
   $('detail').classList.remove('shown');
   setTimeout(() => { $('detail').hidden = true; }, 420);
@@ -729,6 +731,7 @@ function openSearch() {
 }
 
 function closeSearch() {
+  back();
   $('search').classList.remove('shown');
   setTimeout(() => { $('search').hidden = true; }, 320);
   body.dataset.screen = state.screen = 'home';
@@ -995,6 +998,7 @@ function playerKey(key) {
 }
 
 function closePlayer() {
+  back();
   tickPlayer();
   clearInterval(player.ticker);
   clearTimeout(player.chromeTimer);
@@ -1099,13 +1103,14 @@ async function main() {
   $('home').hidden = false;
   buildHome(payload);
 
+  // The profile screen goes up behind the boot overlay, not after it. Revealing
+  // it once the overlay had already faded showed a frame of the catalogue first.
+  const needsProfile = !resuming && payload.profile?.profiles?.length > 1;
+  if (needsProfile) showProfiles(payload.profile);
+
   await boot;
 
-  if (!resuming && payload.profile?.profiles?.length > 1) {
-    showProfiles(payload.profile);
-  } else {
-    body.dataset.screen = state.screen = 'home';
-  }
+  if (!needsProfile) body.dataset.screen = state.screen = 'home';
   wake();
 
   window.addEventListener('keydown', (event) => {

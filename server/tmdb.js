@@ -65,18 +65,35 @@ function usable(item) {
   return item.poster_path && (item.title || item.name);
 }
 
+// Discover rows are filtered by TMDB itself, but trending and search are not.
+// Keeping only titles carried on a subscription we actually pay for — rent and
+// buy do not count as "we can watch this tonight".
+async function onlyOnOurServices(items) {
+  const checked = await Promise.all(items.map(async (item) => {
+    try {
+      const list = await providersFor(item.type, item.id);
+      const included = list.some((p) => p.offer === 'flatrate');
+      return included ? { ...item, providers: list } : null;
+    } catch {
+      return null;
+    }
+  }));
+  return checked.filter(Boolean);
+}
+
 export async function row(kind, page = 1) {
   const flat = subscribedIds().join('|');
   const shared = {
     watch_region: config.tmdb.region,
     with_watch_providers: flat,
+    with_watch_monetization_types: 'flatrate',
     page
   };
 
   switch (kind) {
     case 'trending': {
       const data = await get('/trending/all/week', { page });
-      return data.results.filter(usable).map(card);
+      return onlyOnOurServices(data.results.filter(usable).map(card));
     }
     case 'popular-movies': {
       const data = await get('/discover/movie', { ...shared, sort_by: 'popularity.desc' });
@@ -198,14 +215,7 @@ export async function search(query) {
     .slice(0, 24)
     .map(card);
 
-  const enriched = await Promise.all(results.map(async (r) => {
-    try {
-      return { ...r, providers: await providersFor(r.type, r.id) };
-    } catch {
-      return { ...r, providers: [] };
-    }
-  }));
-  return enriched;
+  return onlyOnOurServices(results);
 }
 
 export async function heroPick() {
