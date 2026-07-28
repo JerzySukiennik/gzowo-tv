@@ -6,7 +6,8 @@
   --dim: rgba(245, 245, 247, 0.56);
   --faint: rgba(245, 245, 247, 0.3);
   --tint: 120, 130, 150;
-  --row-gap: 2.6rem;
+  --row-gap: 3rem;
+  --focus-scale: 1.1;
   --edge: 4.5rem;
   --poster-w: 12.6rem;
   --focus-spring: 320ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -360,7 +361,7 @@ body[data-screen="search"] #boot { display: none; }
   letter-spacing: -0.005em;
   color: var(--dim);
   padding: 0 var(--edge);
-  margin-bottom: 0.85rem;
+  margin-bottom: 1.55rem;
   transition: color 260ms ease;
 }
 
@@ -406,7 +407,7 @@ body[data-screen="search"] #boot { display: none; }
 }
 
 .card[data-focus="on"] {
-  transform: scale(1.13);
+  transform: scale(var(--focus-scale));
   box-shadow: 0 26px 60px rgba(0, 0, 0, 0.72);
   z-index: 3;
 }
