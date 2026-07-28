@@ -68,8 +68,10 @@ export async function launch({ url, bounds }) {
     '--disable-features=Translate,BraveRewards,BraveWallet,BraveVPN',
     '--autoplay-policy=no-user-gesture-required',
     '--disable-session-crashed-bubble',
-    '--start-fullscreen',
-    `--app=${url}`
+    '--disable-infobars',
+    '--no-default-browser-check',
+    '--kiosk',
+    url
   ];
 
   if (bounds) {
@@ -97,6 +99,19 @@ export function quit() {
 export async function targets() {
   const list = await api('/json/list');
   return Array.isArray(list) ? list.filter((t) => t.type === 'page') : [];
+}
+
+export async function mainTarget() {
+  const pages = await targets().catch(() => []);
+  return pages[0] || null;
+}
+
+export async function goTo(url) {
+  const target = await mainTarget();
+  if (!target) return false;
+  const socket = await connect(target);
+  await send(socket, 'Page.navigate', { url });
+  return true;
 }
 
 export async function openTab(url) {

@@ -614,7 +614,13 @@ function showHome() {
 async function main() {
   connect();
 
-  const boot = playBoot($('boot'));
+  const resuming = new URLSearchParams(location.search).has('resume');
+  if (resuming) {
+    $('boot').style.opacity = '0';
+    $('boot').hidden = true;
+  }
+
+  const boot = resuming ? Promise.resolve() : playBoot($('boot'));
   const payload = await api('/api/home').catch(() => null);
 
   if (!payload || payload.error) {

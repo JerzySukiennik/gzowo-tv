@@ -137,9 +137,7 @@ function pushState() {
 }
 
 async function activeProviderTarget() {
-  if (!session.targetId) return null;
-  const list = await browser.targets().catch(() => []);
-  return list.find((t) => t.id === session.targetId) || null;
+  return browser.mainTarget().catch(() => null);
 }
 
 async function handleRemoteInput(message) {
@@ -178,13 +176,12 @@ async function openProvider({ providerKey, item }) {
 
   if (!browser.running()) return { ok: false, error: 'brave-not-running' };
 
-  const created = await browser.openTab(url).catch(() => null);
-  if (!created?.id) return { ok: false, error: 'tab-failed' };
+  const went = await browser.goTo(url).catch(() => false);
+  if (!went) return { ok: false, error: 'navigation-failed' };
 
-  await browser.activate(created.id);
   session.mode = 'provider';
   session.provider = providerKey;
-  session.targetId = created.id;
+  session.targetId = null;
   session.title = item?.title || provider.name;
   if (item) store.recordOpen(item, providerKey);
   pushState();
@@ -192,12 +189,9 @@ async function openProvider({ providerKey, item }) {
 }
 
 async function returnHome() {
-  if (session.mode === 'provider' && session.targetId) {
-    await browser.closeTab(session.targetId).catch(() => {});
+  if (session.mode === 'provider') {
+    await browser.goTo(`http://localhost:${config.port}/tv/?resume=1`).catch(() => {});
   }
-  const list = await browser.targets().catch(() => []);
-  const home = list.find((t) => t.url.includes(`:${config.port}/tv`));
-  if (home) await browser.activate(home.id);
   session.mode = 'ui';
   session.provider = null;
   session.targetId = null;
