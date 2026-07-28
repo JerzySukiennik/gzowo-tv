@@ -1,13 +1,13 @@
-// Boot sequence. A seam of light opens in the black, splits into five shafts that
-// fall into the letter positions, and everything lands on one impact frame — the
-// flash, the letters and the chord all fire on the same instant.
+// Boot sequence. An inked octopus draws itself out of the dark while a seam of
+// light opens below it; five shafts rise into the letter positions and everything
+// lands on one impact frame — flash, letters and chord on the same instant.
 
 import { bootSting } from './sound.js';
 
 const IMPACT = 1300;
 const SPREAD = 9;
-const HOLD = 900;
-const EXIT = 780;
+const HOLD = 1000;
+const EXIT = 820;
 
 const OUT = 'cubic-bezier(0.16, 1, 0.3, 1)';
 const IN_OUT = 'cubic-bezier(0.7, 0, 0.2, 1)';
@@ -20,15 +20,54 @@ function guard(promise, ms) {
 }
 
 export function play(root) {
+  const stage = root.querySelector('.boot-stage');
+  const kraken = root.querySelector('.kraken');
+  const ink = [...root.querySelectorAll('.ink')];
   const glyphs = [...root.querySelectorAll('.glyph')];
   const seed = root.querySelector('.seed');
   const sweep = root.querySelector('.sweep');
   const flash = root.querySelector('.boot-flash');
+  const grain = root.querySelector('.boot-grain');
   const mark = root.querySelector('.wordmark');
 
   bootSting(IMPACT);
 
-  if (reduced()) return quick(root, glyphs, seed);
+  if (reduced()) return quick(root, glyphs, seed, kraken, ink);
+
+  const settle = IMPACT + 620 + HOLD;
+  const total = settle + EXIT;
+
+  stage.animate([
+    { transform: 'scale(1.07)' },
+    { transform: 'scale(1.005)', offset: 0.62 },
+    { transform: 'scale(1)' }
+  ], { duration: total, easing: 'cubic-bezier(0.28, 0, 0.2, 1)', fill: 'forwards' });
+
+  grain.animate([
+    { opacity: 0 },
+    { opacity: 0.05, offset: 0.14 },
+    { opacity: 0.05, offset: 0.82 },
+    { opacity: 0 }
+  ], { duration: total, easing: 'linear', fill: 'forwards' });
+
+  ink.forEach((path, i) => {
+    path.animate([
+      { strokeDashoffset: 1 },
+      { strokeDashoffset: 0 }
+    ], { duration: 900, delay: 120 + i * 74, easing: 'cubic-bezier(0.35, 0, 0.2, 1)', fill: 'forwards' });
+  });
+
+  kraken.animate([
+    { opacity: 0 },
+    { opacity: 0.26, offset: 0.7 },
+    { opacity: 0.3 }
+  ], { duration: IMPACT - 60, easing: 'ease-out', fill: 'forwards' });
+
+  kraken.animate([
+    { opacity: 0.3, transform: 'translate(-50%, -57%) scale(1)' },
+    { opacity: 0.72, transform: 'translate(-50%, -57%) scale(1.035)', offset: 0.12 },
+    { opacity: 0.16, transform: 'translate(-50%, -57%) scale(1)' }
+  ], { duration: 900, delay: IMPACT - 40, easing: OUT, fill: 'forwards' });
 
   seed.animate([
     { transform: 'scaleX(0)', opacity: 0 },
@@ -40,19 +79,18 @@ export function play(root) {
   glyphs.forEach((glyph, i) => {
     const shaft = glyph.querySelector('.shaft');
     const letter = glyph.querySelector('b');
-    const delay = 620 + i * 52;
 
     shaft.animate([
       { transform: 'scaleY(0)', opacity: 0 },
       { transform: 'scaleY(1)', opacity: 1, offset: 0.55 },
       { transform: 'scaleY(1)', opacity: 1, offset: 0.86 },
       { transform: 'scaleY(0.04)', opacity: 0 }
-    ], { duration: IMPACT - 340, delay, easing: IN_OUT, fill: 'forwards' });
+    ], { duration: IMPACT - 340, delay: 620 + i * 52, easing: IN_OUT, fill: 'forwards' });
 
     letter.animate([
       { opacity: 0, transform: 'scale(1.22)', filter: 'blur(12px)' },
       { opacity: 1, transform: 'scale(1)', filter: 'blur(0px)' }
-    ], { duration: 620, delay: IMPACT - 40, easing: SNAP, fill: 'forwards' });
+    ], { duration: 620, delay: IMPACT - 40 + i * 16, easing: SNAP, fill: 'forwards' });
 
     glyph.animate([
       { transform: 'translateX(0px)' },
@@ -73,12 +111,15 @@ export function play(root) {
     { transform: 'translateX(20rem) skewX(-16deg)', opacity: 0 }
   ], { duration: 900, delay: IMPACT + 170, easing: IN_OUT, fill: 'forwards' });
 
-  const settle = IMPACT + 620 + HOLD;
-
   const exit = mark.animate([
     { opacity: 1, transform: 'scale(1)', filter: 'blur(0px)' },
     { opacity: 0, transform: 'scale(0.9)', filter: 'blur(16px)' }
   ], { duration: EXIT, delay: settle, easing: IN_OUT, fill: 'forwards' });
+
+  kraken.animate([
+    { opacity: 0.16 },
+    { opacity: 0 }
+  ], { duration: EXIT - 260, delay: settle, easing: 'ease-in', fill: 'forwards' });
 
   const fade = root.animate([
     { opacity: 1 },
@@ -86,11 +127,13 @@ export function play(root) {
   ], { duration: EXIT - 180, delay: settle + 180, easing: 'ease', fill: 'forwards' });
 
   const done = Promise.all([exit.finished, fade.finished]).catch(() => {});
-  return guard(done, settle + EXIT + 300).then(() => { root.style.opacity = '0'; });
+  return guard(done, total + 300).then(() => { root.style.opacity = '0'; });
 }
 
-function quick(root, glyphs, seed) {
+function quick(root, glyphs, seed, kraken, ink) {
   seed.style.opacity = '0';
+  kraken.style.opacity = '0.18';
+  ink.forEach((path) => { path.style.strokeDashoffset = '0'; });
   glyphs.forEach((glyph) => {
     glyph.querySelector('.shaft').style.opacity = '0';
     glyph.querySelector('b').style.cssText = 'opacity:1;transform:none';

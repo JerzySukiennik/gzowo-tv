@@ -111,6 +111,35 @@ h1 {
   position: relative;
   display: grid;
   place-items: center;
+  will-change: transform;
+}
+
+.kraken {
+  position: absolute;
+  width: 27rem;
+  height: 26rem;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -57%);
+  opacity: 0;
+  overflow: visible;
+  will-change: opacity;
+}
+
+.kraken .ink {
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: 1;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.32));
+  vector-effect: non-scaling-stroke;
+}
+
+.boot-grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  will-change: opacity;
 }
 
 .seed {
