@@ -473,18 +473,55 @@ body[data-screen="search"] #boot { display: none; }
   background: #fff;
 }
 
+/* No colour of its own anywhere in here — a live stream is marked by a dot that
+   breathes, which reads across a room without breaking the rule that the only
+   colour on screen comes from the artwork. */
 .card .live {
   position: absolute;
   left: 0.5rem;
   top: 0.5rem;
-  padding: 0.18rem 0.45rem;
+  display: flex;
+  align-items: center;
+  gap: 0.32rem;
+  padding: 0.2rem 0.5rem 0.2rem 0.42rem;
   border-radius: 0.3rem;
   font-size: 0.56rem;
   font-weight: 700;
   letter-spacing: 0.09em;
   text-transform: uppercase;
-  background: #e0243a;
   color: #fff;
+  background: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.card .live::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #fff;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.card .live[data-state="upcoming"] {
+  color: rgba(245, 245, 247, 0.66);
+}
+
+.card .live[data-state="upcoming"]::before {
+  background: transparent;
+  border: 1px solid rgba(245, 245, 247, 0.66);
+  animation: none;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card .live::before { animation: none; }
 }
 
 .card .caption {

@@ -9,7 +9,6 @@ const PROVIDERS = [
     name: 'Netflix',
     kind: 'browser',
     subscribed: true,
-    tint: '#e50914',
     search: (title) => `https://www.netflix.com/search?q=${encodeURIComponent(title)}`,
     home: 'https://www.netflix.com/browse'
   },
@@ -19,7 +18,6 @@ const PROVIDERS = [
     name: 'HBO Max',
     kind: 'browser',
     subscribed: true,
-    tint: '#8a4ff7',
     search: (title) => `https://play.max.com/search?q=${encodeURIComponent(title)}`,
     home: 'https://play.max.com'
   },
@@ -29,7 +27,6 @@ const PROVIDERS = [
     name: 'Disney+',
     kind: 'browser',
     subscribed: true,
-    tint: '#3b5bdb',
     search: (title) => `https://www.disneyplus.com/pl-pl/search?q=${encodeURIComponent(title)}`,
     home: 'https://www.disneyplus.com/pl-pl'
   },
@@ -39,7 +36,6 @@ const PROVIDERS = [
     name: 'Prime Video',
     kind: 'browser',
     subscribed: true,
-    tint: '#00a8e1',
     search: (title) => `https://www.primevideo.com/search/?phrase=${encodeURIComponent(title)}`,
     home: 'https://www.primevideo.com'
   },
@@ -49,7 +45,6 @@ const PROVIDERS = [
     name: 'Apple TV+',
     kind: 'browser',
     subscribed: true,
-    tint: '#b0b0b8',
     search: (title) => `https://tv.apple.com/pl/search?term=${encodeURIComponent(title)}`,
     home: 'https://tv.apple.com/pl'
   },
@@ -59,7 +54,6 @@ const PROVIDERS = [
     name: 'Moja biblioteka Apple',
     kind: 'native',
     subscribed: true,
-    tint: '#6e6e76',
     note: 'FairPlay — plays only in the macOS TV app',
     search: () => null,
     home: null
@@ -99,7 +93,6 @@ export function normalise(tmdbProviders) {
         key: known.key,
         name: known.name,
         kind: known.kind,
-        tint: known.tint,
         offer: offer === 'ads' || offer === 'free' ? 'flatrate' : offer,
         subscribed: known.subscribed
       });

@@ -336,17 +336,12 @@ function card(item) {
     el.append(caption);
   }
 
-  if (item.live) {
-    const live = document.createElement('span');
-    live.className = 'live';
-    live.textContent = 'Na żywo';
-    el.append(live);
-  } else if (item.upcoming) {
-    const soon = document.createElement('span');
-    soon.className = 'live';
-    soon.style.background = '#8a6d1f';
-    soon.textContent = 'Wkrótce';
-    el.append(soon);
+  if (item.live || item.upcoming) {
+    const badge = document.createElement('span');
+    badge.className = 'live';
+    badge.dataset.state = item.live ? 'live' : 'upcoming';
+    badge.textContent = item.live ? 'Na żywo' : 'Wkrótce';
+    el.append(badge);
   }
 
   if (item.position && item.duration) {

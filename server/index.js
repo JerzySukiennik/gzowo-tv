@@ -12,6 +12,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import QRCode from 'qrcode';
 import { ROOT, config } from './config.js';
 import * as tmdb from './tmdb.js';
+import * as cache from './cache.js';
 import * as store from './store.js';
 import * as providers from './providers.js';
 import * as browser from './browser.js';
@@ -285,11 +286,22 @@ const server = createServer(async (req, res) => {
       res.writeHead(403);
       return res.end();
     }
+    // Cached on disk like the TMDB artwork. Without this every repaint of a
+    // YouTube row refetched every thumbnail, and the cards sat empty while it
+    // happened.
+    const key = `yt-thumb:${remote.href}`;
+    const hit = cache.readStale(key);
+    if (hit) {
+      res.writeHead(200, { 'content-type': 'image/jpeg', 'cache-control': 'public, max-age=604800' });
+      return res.end(Buffer.from(hit, 'base64'));
+    }
+
     try {
       const upstream = await fetch(remote, { signal: AbortSignal.timeout(9000) });
       if (!upstream.ok) throw new Error(String(upstream.status));
       const buf = Buffer.from(await upstream.arrayBuffer());
-      res.writeHead(200, { 'content-type': 'image/jpeg', 'cache-control': 'public, max-age=86400' });
+      cache.write(key, buf.toString('base64'));
+      res.writeHead(200, { 'content-type': 'image/jpeg', 'cache-control': 'public, max-age=604800' });
       return res.end(buf);
     } catch {
       res.writeHead(404);
